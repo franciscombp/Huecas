@@ -298,10 +298,31 @@ const HUECA = {
   startRating: 5, maxRating: 10,
   rentEvery: 5,        /* cada cuántos clientes pasa el dueño */
   rent: 15,            /* en sucres (miles) */
-  patienceMs: 90000,   /* cuánto espera un cliente */
-  spawnMin: 5, spawnMax: 9,   /* acciones entre clientes */
   tipMax: 2,           /* propina máxima */
+  /* la presión escala con los platos que ya dominas:
+     más clientes, menos paciencia */
+  pressure: [
+    { dishes: 1, min: 7, max: 10, patience: 90 },
+    { dishes: 2, min: 5, max: 8,  patience: 75 },
+    { dishes: 4, min: 4, max: 6,  patience: 60 },
+  ],
 };
+
+/* La autoridad de salubridad: 3 clientes seguidos sin servir
+   y viene a revisar. Sin comida lista → clausura. */
+const SALUBRIDAD = { missLimit: 3 };
+
+/* Metas de largo plazo: la hueca nunca "se acaba". */
+const MILESTONES = [
+  { served: 10, title: 'Hueca de barrio',      reward: 5,
+    note: 'Ya te conocen en la cuadra. Los taxistas recomiendan.' },
+  { served: 25, title: 'Hueca famosa',         reward: 10,
+    note: 'Vienen desde el otro lado del río. Hay fila los domingos.' },
+  { served: 50, title: 'Leyenda de la ciudad', reward: 20,
+    note: 'Salió en el periódico. La abuela estaría orgullosa.' },
+  { served: 100, title: 'Patrimonio del sabor', reward: 50,
+    note: 'Cien platos servidos. Esto ya es historia nacional.' },
+];
 
 /* ---------- Economía ---------- */
 const REWARDS = { step: 2, technique: 1, dish: 6, dishVariant: 4, dishMeta: 12, creative: 3 };
@@ -329,4 +350,9 @@ const MICROCOPY = {
   dullKnife: 'El cuchillo no corta ni mantequilla. El afilador está en la lona.',
   served: '¡Servido caliente! La hueca suena a cucharas.',
   missed: 'Se fue con hambre. Eso se comenta en el barrio…',
+  salubridadPass: 'Revisaron todo. Había comida lista: te dejan seguir.',
+  salubridadClose: 'Llegó salubridad y no había ni un plato listo. Clausurada.',
+  calmOn: 'Modo tranquilo: cocina y descubre sin apuros.',
+  calmOff: 'Modo servicio: la clientela vuelve a llegar.',
+  firstDish: 'Recuperaste tu primer plato. Ahora la clientela empezará a llegar…',
 };

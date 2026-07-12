@@ -1,9 +1,9 @@
 /* ============================================================
-   Huecas — saberes y sabores (v4)
-   app.js — Tu hueca: cocina, clientes, arriendo y reglas.
+   Huecas — saberes y sabores (v5)
+   app.js — Tu hueca: descubrir, servir bajo presión y sobrevivir.
    ============================================================ */
 
-const SAVE_KEY = 'huecas_save_v4';
+const SAVE_KEY = 'huecas_save_v5';
 
 /* ---------- Recetario aplanado + reglas ---------- */
 
@@ -17,6 +17,7 @@ const findStep = (x, y) => ALL_STEPS.find(s => pairMatch(s, x, y));
 const findRule = (x, y) => RULES.find(r => pairMatch(r, x, y));
 
 const isTool = (id) => ITEMS[id].type === 'tool';
+const isDish = (id) => ITEMS[id].type === 'dish';
 const isDone = (id) => ['dish', 'junk'].includes(ITEMS[id].type);
 
 /* ---------- Sucres (año 2000: todo en miles) ---------- */
@@ -33,7 +34,7 @@ function newState() {
     owned: ['bolon'],
     inv: {},
     tools: [],
-    toolWear: {},        /* id -> usos restantes */
+    toolWear: {},
     discovered: [],
     techniques: [],
     revealed: [],
@@ -41,10 +42,14 @@ function newState() {
     active: 'bolon',
     rating: HUECA.startRating,
     served: 0, missed: 0,
-    sinceRent: 0,        /* clientes desde el último arriendo */
-    fiado: false,        /* si el dueño ya te fió una vez */
+    consecutiveMisses: 0,
+    sinceRent: 0,
+    fiado: false,
     timesClosed: 0,
-    actions: 0, nextSpawn: HUECA.spawnMin,
+    actions: 0, nextSpawn: 3,
+    mode: 'servicio',          /* 'servicio' | 'tranquilo' */
+    milestonesHit: [],
+    seenIntro: false,
   };
   grantBasket(s, CUADERNOS.bolon.grants);
   return s;
@@ -79,6 +84,8 @@ const knows = (id) => state.discovered.includes(id);
 const owns = (cid) => state.owned.includes(cid);
 const count = (id) => isTool(id) ? (state.tools.includes(id) ? 1 : 0) : (state.inv[id] || 0);
 const isDull = (id) => ITEMS[id].wear && (state.toolWear[id] ?? ITEMS[id].wear) <= 0;
+const realDishes = () => state.dishesDone.filter(d => !ITEMS[d].creative);
+const hasReadyDish = () => Object.keys(state.inv).some(id => isDish(id) && count(id) > 0);
 
 function addItem(id, n = 1) {
   if (isTool(id)) {
@@ -143,8 +150,8 @@ function show(screen) {
   currentScreen = screen;
   SCREENS.forEach(s => $('#screen-' + s).classList.toggle('active', s === screen));
   const inGame = screen !== 'cover';
-  $('#tabbar').classList.toggle('hidden', !inGame);
   $('#hud').classList.toggle('hidden', !inGame);
+  $('#tabbar').classList.toggle('hidden', !inGame);
   $('#ticket').classList.toggle('offscreen', !inGame || !customer);
   const tabOf = { shelf: 'shelf', receta: 'shelf', cocina: 'cocina', mercado: 'mercado' };
   $$('#tabbar .tab-btn').forEach(b => b.classList.toggle('current', b.dataset.screen === tabOf[screen]));
@@ -152,6 +159,7 @@ function show(screen) {
   if (screen === 'receta') renderReceta();
   if (screen === 'cocina') renderCocina();
   if (screen === 'mercado') renderMercado();
+  $('#stage').scrollTo(0, 0);
   window.scrollTo(0, 0);
 }
 
@@ -165,16 +173,32 @@ function goCook(cid) {
 
 /* ---------- HUD: sucres y fama ---------- */
 
+function heartsHtml(rating) {
+  /* 5 corazones, cada uno vale 2 de fama */
+  let out = '';
+  for (let i = 0; i < 5; i++) {
+    const v = rating - i * 2;
+    const cls = v >= 2 ? 'full' : v === 1 ? 'half' : 'empty';
+    out += `<span class="heart ${cls}">${iconOf('corazon')}</span>`;
+  }
+  return out;
+}
+
 function renderHud() {
   $('#hud-coins').textContent = 'S/ ' + S(state.coins);
-  $('#hud-rating').textContent = state.rating;
+  $('#hud-hearts').innerHTML = heartsHtml(state.rating);
+  const modeBtn = $('#hud-mode');
+  modeBtn.dataset.mode = state.mode;
+  modeBtn.innerHTML = state.mode === 'servicio'
+    ? '<span class="mode-dot on"></span> Servicio'
+    : '<span class="mode-dot"></span> Tranquilo';
 }
 
 function addCoins(n) {
   state.coins += n;
   renderHud();
   if (n > 0) {
-    const chip = $('#hud');
+    const chip = $('#hud-coins-pill');
     chip.classList.remove('pulse');
     void chip.offsetWidth;
     chip.classList.add('pulse');
@@ -211,28 +235,37 @@ function toast(msg, tone = 'ink') {
 }
 
 /* ============================================================
-   LA HUECA — clientes y arriendo
+   LA HUECA — clientes, presión, salubridad, arriendo
    ============================================================ */
 
-let customer = null;      /* { name, icon, dish, deadline } */
+let customer = null;
 let customerTimer = null;
 
-/* cada acción del jugador acerca al próximo cliente */
+/* la presión sube con los platos que dominas */
+function pressureTier() {
+  const n = realDishes().length;
+  let tier = HUECA.pressure[0];
+  for (const p of HUECA.pressure) if (n >= p.dishes) tier = p;
+  return tier;
+}
+
+/* cada acción acerca al próximo cliente (solo en servicio) */
 function tickAction() {
+  if (state.mode !== 'servicio' || !realDishes().length) return;
   state.actions += 1;
-  if (!customer && state.actions >= state.nextSpawn && state.dishesDone.length) {
-    spawnCustomer();
-  }
+  if (!customer && state.actions >= state.nextSpawn) spawnCustomer();
   save();
 }
 
 function spawnCustomer() {
-  const who = pick(CLIENTES);
-  const dish = pick(state.dishesDone.filter(d => !ITEMS[d].creative));
+  if (state.mode !== 'servicio') return;
+  const dish = pick(realDishes());
   if (!dish) return;
-  customer = { ...who, dish, deadline: Date.now() + HUECA.patienceMs };
+  const who = pick(CLIENTES);
+  const tier = pressureTier();
+  customer = { ...who, dish, deadline: Date.now() + tier.patience * 1000, total: tier.patience };
   state.actions = 0;
-  state.nextSpawn = rand(HUECA.spawnMin, HUECA.spawnMax);
+  state.nextSpawn = rand(tier.min, tier.max);
   renderTicket();
   buzz([40, 60, 40]);
   clearInterval(customerTimer);
@@ -240,26 +273,34 @@ function spawnCustomer() {
     if (!customer) { clearInterval(customerTimer); return; }
     const left = customer.deadline - Date.now();
     if (left <= 0) resolveCustomer(false);
-    else $('#ticket-time').textContent = Math.ceil(left / 1000) + 's';
-  }, 1000);
+    else updateTicketTimer(left);
+  }, 250);
+}
+
+function updateTicketTimer(left) {
+  $('#ticket-time').textContent = Math.ceil(left / 1000) + 's';
+  const frac = Math.max(0, left / (customer.total * 1000));
+  $('#ticket-bar').style.transform = `scaleX(${frac})`;
+  $('#ticket').classList.toggle('urgent', frac < 0.33);
 }
 
 function renderTicket() {
   const t = $('#ticket');
   if (!customer) { t.classList.add('offscreen'); return; }
+  const have = count(customer.dish) >= 1;
   $('#ticket-avatar').innerHTML = iconOf(customer.icon);
+  $('#ticket-dish').innerHTML = iconOf(customer.dish);
   $('#ticket-text').innerHTML =
-    `<strong>${customer.name}</strong> quiere <em>${ITEMS[customer.dish].name}</em>`;
-  $('#ticket-time').textContent = Math.ceil((customer.deadline - Date.now()) / 1000) + 's';
+    `<strong>${customer.name}</strong><br>quiere <em>${ITEMS[customer.dish].name}</em>`;
+  updateTicketTimer(customer.deadline - Date.now());
   const serveBtn = $('#ticket-serve');
-  serveBtn.disabled = count(customer.dish) < 1;
-  serveBtn.innerHTML = count(customer.dish) < 1
-    ? 'No hay listo' : `Servir <small>+S/ ${S(customerPay(customer.dish))}</small>`;
+  serveBtn.disabled = !have;
+  serveBtn.innerHTML = have ? `Servir <small>+S/ ${S(customerPay(customer.dish))}</small>` : 'No lo tienes';
   t.classList.remove('offscreen');
 }
 
 function customerPay(dish) {
-  return ITEMS[dish].sell + Math.floor(state.rating / 4); /* la fama paga */
+  return ITEMS[dish].sell + Math.floor(state.rating / 4);
 }
 
 function resolveCustomer(served) {
@@ -273,63 +314,110 @@ function resolveCustomer(served) {
     addCoins(customerPay(c.dish) + tip);
     state.rating = Math.min(HUECA.maxRating, state.rating + 1);
     state.served += 1;
+    state.consecutiveMisses = 0;
     toast(`${MICROCOPY.served}${tip ? ` Propina: S/ ${S(tip)}.` : ''}`, 'seal');
     buzz([30, 40, 60]);
+    state.sinceRent += 1;
+    renderHud();
+    save();
+    refreshGameScreens();
+    if (checkMilestone()) return;
+    if (state.sinceRent >= HUECA.rentEvery) { setTimeout(showRent, 1000); return; }
   } else {
     state.rating = Math.max(0, state.rating - 1);
     state.missed += 1;
+    state.consecutiveMisses += 1;
     toast(MICROCOPY.missed, 'soft');
     buzz(90);
+    state.sinceRent += 1;
+    renderHud();
+    save();
+    refreshGameScreens();
+    if (state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 1000); return; }
+    if (state.sinceRent >= HUECA.rentEvery) { setTimeout(showRent, 1000); return; }
   }
-  state.sinceRent += 1;
-  renderHud();
-  save();
+}
+
+function refreshGameScreens() {
   if (currentScreen === 'cocina') renderCocina();
   if (currentScreen === 'mercado') renderMercado();
-  if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 900);
+  if (currentScreen === 'shelf') renderShelf();
+}
+
+/* ---------- Salubridad ---------- */
+
+function salubridadVisit() {
+  state.consecutiveMisses = 0;
+  const pass = hasReadyDish();
+  $('#salubridad-icon').innerHTML = iconOf(pass ? 'salubridad' : 'arriendo');
+  $('#salubridad-title').textContent = 'Autoridad de salubridad';
+  $('#salubridad-text').textContent = pass
+    ? 'Tres clientes se fueron con hambre y llegó la inspección. Por suerte tenías un plato listo para mostrar.'
+    : 'Tres clientes se fueron con hambre y llegó la inspección. No había ni un plato listo que mostrar.';
+  const btn = $('#salubridad-ok');
+  btn.textContent = pass ? MICROCOPY.salubridadPass.split(':')[0] + ': seguir' : 'Cerrar la hueca';
+  btn.dataset.pass = pass ? '1' : '0';
+  $('#modal-salubridad').classList.add('open');
+  save();
+}
+
+function resolveSalubridad() {
+  const pass = $('#salubridad-ok').dataset.pass === '1';
+  $('#modal-salubridad').classList.remove('open');
+  if (pass) toast(MICROCOPY.salubridadPass, 'seal');
+  else { toast(MICROCOPY.salubridadClose, 'soft'); closeHueca(); }
+}
+
+/* ---------- Milestones ---------- */
+
+function checkMilestone() {
+  const m = MILESTONES.find(m => state.served >= m.served && !state.milestonesHit.includes(m.served));
+  if (!m) return false;
+  state.milestonesHit.push(m.served);
+  addCoins(m.reward);
+  save();
+  $('#milestone-icon').innerHTML = iconOf('corazon');
+  $('#milestone-title').textContent = m.title;
+  $('#milestone-served').textContent = `${m.served} clientes servidos`;
+  $('#milestone-note').textContent = m.note;
+  $('#milestone-reward').textContent = `+S/ ${S(m.reward)}`;
+  $('#modal-milestone').classList.add('open');
+  return true;
 }
 
 /* ---------- Arriendo ---------- */
 
 function showRent() {
   state.sinceRent = 0;
-  const m = $('#modal-arriendo');
-  $('#arriendo-text').textContent =
-    `Don Aurelio pasa por el arriendo: S/ ${S(HUECA.rent)}.`;
-  const payBtn = $('#arriendo-pay');
   const canPay = state.coins >= HUECA.rent;
   const canFiar = !canPay && !state.fiado && state.rating >= 7;
+  $('#arriendo-text').textContent = `Don Aurelio pasa por el arriendo: S/ ${S(HUECA.rent)}.`;
+  const payBtn = $('#arriendo-pay');
   payBtn.textContent = canPay ? `Pagar S/ ${S(HUECA.rent)}`
     : canFiar ? 'Pedir que te fíe' : 'No me alcanza…';
   payBtn.dataset.mode = canPay ? 'pay' : canFiar ? 'fiar' : 'close';
   $('#arriendo-note').textContent = canPay
     ? 'La hueca sigue abierta un mes más.'
-    : canFiar
-      ? 'Con tu fama, don Aurelio puede esperar. Solo esta vez.'
+    : canFiar ? 'Con tu fama, don Aurelio puede esperar. Solo esta vez.'
       : 'Sin sucres y sin fama, don Aurelio no perdona.';
-  m.classList.add('open');
+  $('#modal-arriendo').classList.add('open');
   save();
 }
 
 function resolveRent() {
   const mode = $('#arriendo-pay').dataset.mode;
   $('#modal-arriendo').classList.remove('open');
-  if (mode === 'pay') {
-    addCoins(-HUECA.rent);
-    toast('Arriendo pagado. Un mes más de hueca.', 'seal');
-    save();
-  } else if (mode === 'fiar') {
-    state.fiado = true;
-    toast('Don Aurelio anota en su libreta y se va sin sonreír.', 'soft');
-    save();
-  } else {
-    closeHueca();
-  }
+  if (mode === 'pay') { addCoins(-HUECA.rent); toast('Arriendo pagado. Un mes más de hueca.', 'seal'); save(); }
+  else if (mode === 'fiar') { state.fiado = true; toast('Don Aurelio anota en su libreta y se va sin sonreír.', 'soft'); save(); }
+  else closeHueca();
 }
 
 /* ---------- Cierre y reapertura ---------- */
 
 function closeHueca() {
+  clearInterval(customerTimer);
+  customer = null;
+  renderTicket();
   state.timesClosed += 1;
   $('#cierre-veces').textContent = state.timesClosed > 1
     ? `Ya van ${state.timesClosed} veces. El barrio te sigue queriendo.` : '';
@@ -338,11 +426,11 @@ function closeHueca() {
 }
 
 function reopenHueca() {
-  /* se pierden inventario y sucres; quedan recetas, técnicas y utensilios */
   state.inv = {};
   state.coins = INITIAL_COINS;
   state.rating = HUECA.startRating;
   state.sinceRent = 0;
+  state.consecutiveMisses = 0;
   state.fiado = false;
   state.actions = 0;
   state.tools.forEach(t => { if (ITEMS[t].wear) state.toolWear[t] = ITEMS[t].wear; });
@@ -353,6 +441,24 @@ function reopenHueca() {
   $('#modal-cierre').classList.remove('open');
   toast('La hueca vuelve a abrir. Las recetas nunca se fueron.', 'seal');
   show('cocina');
+}
+
+/* ---------- Modo tranquilo / servicio ---------- */
+
+function toggleMode() {
+  state.mode = state.mode === 'servicio' ? 'tranquilo' : 'servicio';
+  if (state.mode === 'tranquilo') {
+    clearInterval(customerTimer);
+    customer = null;
+    renderTicket();
+    state.actions = 0;
+    toast(MICROCOPY.calmOn, 'seal');
+  } else {
+    toast(MICROCOPY.calmOff, 'ink');
+  }
+  renderHud();
+  save();
+  refreshGameScreens();
 }
 
 /* ============================================================
@@ -377,12 +483,12 @@ function renderShelf() {
       <span class="book-city">${c.city}</span>
       <span class="book-progress">${done
         ? '<span class="stamp-mini">completo ★</span>'
-        : '●'.repeat(stepsDone(cid)) + '○'.repeat(total - stepsDone(cid))}</span>
+        : '<span class="dots">' + '●'.repeat(stepsDone(cid)) + '○'.repeat(total - stepsDone(cid)) + '</span>'}</span>
     ` : `
       <span class="book-icon dim">${iconOf('cuaderno')}</span>
       <span class="book-title">¿${c.title}?</span>
       <span class="book-city">${c.city}</span>
-      <span class="book-progress"><span class="price-tag">S/ ${S(c.cost)} en la lona</span></span>
+      <span class="book-progress"><span class="price-tag">S/ ${S(c.cost)}</span></span>
     `;
     book.addEventListener('click', () => {
       if (owned) openReceta(cid);
@@ -392,7 +498,12 @@ function renderShelf() {
   });
 
   const done = CUADERNO_ORDER.filter(cid => owns(cid) && isComplete(cid)).length;
-  $('#shelf-progress').textContent = `${done} de ${CUADERNO_ORDER.length} platos recuperados · ${state.served} clientes servidos`;
+  $('#shelf-recipes').textContent = `${done}/${CUADERNO_ORDER.length}`;
+  $('#shelf-served').textContent = state.served;
+  const next = MILESTONES.find(m => !state.milestonesHit.includes(m.served));
+  $('#shelf-goal').textContent = next
+    ? `Próxima meta: ${next.title} (${state.served}/${next.served} clientes)`
+    : '¡Patrimonio del sabor alcanzado!';
 }
 
 /* ============================================================
@@ -405,7 +516,7 @@ function pairIcons(step) {
     <span class="op">+</span>
     <span class="mini-item">${iconOf(step.b)}<small>${ITEMS[step.b].name}</small></span>
     <span class="op">→</span>
-    <span class="mini-item">${iconOf(step.result)}<small>${ITEMS[step.result].name}</small></span>`;
+    <span class="mini-item res">${iconOf(step.result)}<small>${ITEMS[step.result].name}</small></span>`;
 }
 
 function renderReceta() {
@@ -427,10 +538,8 @@ function renderReceta() {
   c.steps.forEach((step, i) => {
     const done = knows(step.result);
     const revealed = state.revealed.includes(step.result);
-    const row = el('div', 'step'
-      + (done ? ' done' : '')
-      + (!done && firstPending && !step.variant ? ' current' : '')
-      + (step.variant ? ' variant' : ''));
+    const isCurrent = !done && firstPending && !step.variant;
+    const row = el('div', 'step' + (done ? ' done' : '') + (isCurrent ? ' current' : '') + (step.variant ? ' variant' : ''));
     if (!done && !step.variant && firstPending) firstPending = false;
 
     if (done) {
@@ -449,7 +558,7 @@ function renderReceta() {
           ${step.shopNote ? `<p class="step-shopnote">${step.shopNote}</p>` : ''}
           ${revealed ? `<div class="step-icons">${pairIcons(step)}</div>` : ''}
           <div class="step-actions">
-            <button type="button" class="btn-main small try-btn">Intentar</button>
+            <button type="button" class="btn-main small try-btn">Intentar en la cocina</button>
             ${!revealed ? `<button type="button" class="btn-ghost small reveal">Espiar <small>S/ ${S(REVEAL_COST)}</small></button>` : ''}
           </div>
         </div>`;
@@ -468,7 +577,8 @@ function renderReceta() {
 
   $('#receta-progress').textContent = complete
     ? 'Receta recuperada. Cocínala de memoria: la clientela la pide.'
-    : `${stepsDone(cid)} de ${mainSteps(cid).length} pasos recuperados`;
+    : `${stepsDone(cid)} de ${mainSteps(cid).length} pasos`;
+  $('#receta-cook-btn').onclick = () => goCook(cid);
 }
 
 /* ============================================================
@@ -479,13 +589,36 @@ const slots = [null, null];
 let combining = false;
 
 function renderCocina() {
+  renderServiceStrip();
   renderChips();
   renderInventory();
   renderSlots();
   renderRiddle();
 }
 
-/* selector de recetario activo */
+/* franja de estado del servicio */
+function renderServiceStrip() {
+  const strip = $('#service-strip');
+  if (!realDishes().length) {
+    strip.className = 'service-strip calm';
+    strip.innerHTML = `<span class="ss-dot"></span> Aún sin platos. Descubre tu primera receta.`;
+    return;
+  }
+  if (state.mode === 'tranquilo') {
+    strip.className = 'service-strip calm';
+    strip.innerHTML = `<span class="ss-dot"></span> Modo tranquilo · sin clientes. Cocina con calma.`;
+    return;
+  }
+  const miss = state.consecutiveMisses;
+  if (miss >= 1) {
+    strip.className = 'service-strip warn';
+    strip.innerHTML = `⚠ ${miss}/${SALUBRIDAD.missLimit} clientes sin servir — ten un plato listo o vendrá salubridad.`;
+  } else {
+    strip.className = 'service-strip on';
+    strip.innerHTML = `<span class="ss-dot on"></span> Servicio abierto · la clientela puede llegar.`;
+  }
+}
+
 function renderChips() {
   const chips = $('#cocina-chips');
   chips.innerHTML = '';
@@ -493,18 +626,17 @@ function renderChips() {
     const c = CUADERNOS[cid];
     const b = el('button', 'chip-book' + (cid === state.active ? ' current' : '') + (isComplete(cid) ? ' done' : ''));
     b.type = 'button';
-    b.innerHTML = `<span class="chip-icon">${iconOf(c.dish)}</span><span>${ITEMS[c.dish].name}</span>${isComplete(cid) ? ' ✓' : ''}`;
+    b.innerHTML = `<span class="chip-icon">${iconOf(isComplete(cid) ? c.dish : 'cuaderno')}</span><span>${ITEMS[c.dish].name}</span>`;
     b.addEventListener('click', () => { state.active = cid; save(); renderCocina(); });
     chips.appendChild(b);
   });
 }
 
-/* despensa por secciones */
 function renderInventory() {
   const put = (sel, ids, badge = true) => {
     const box = $(sel);
     box.innerHTML = '';
-    if (!ids.length) { box.appendChild(el('span', 'inv-none hand', '—')); return; }
+    if (!ids.length) { box.appendChild(el('span', 'inv-none', '—')); return; }
     ids.forEach(id => {
       const card = itemCard(id);
       const inSlots = slots.filter(s => s === id).length;
@@ -513,14 +645,11 @@ function renderInventory() {
       if (isTool(id) && ITEMS[id].wear) {
         const left = state.toolWear[id] ?? ITEMS[id].wear;
         card.append(el('span', 'wear' + (left <= 0 ? ' dull' : left <= 2 ? ' low' : ''),
-          left <= 0 ? 'sin filo' : '▮'.repeat(left)));
+          left <= 0 ? '✕' : '▮'.repeat(left)));
         if (left <= 0) card.classList.add('dull-tool');
       }
       card.draggable = true;
-      card.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', id);
-        card.classList.add('dragging');
-      });
+      card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); card.classList.add('dragging'); });
       card.addEventListener('dragend', () => card.classList.remove('dragging'));
       card.addEventListener('click', () => placeInSlot(id));
       box.appendChild(card);
@@ -528,15 +657,13 @@ function renderInventory() {
   };
 
   put('#inv-tools', state.tools);
-  put('#inv-ingredients', Object.keys(state.inv)
-    .filter(id => ITEMS[id].type === 'ingredient')
-    .sort((x, y) => ITEMS[x].name.localeCompare(ITEMS[y].name)));
-  put('#inv-preps', Object.keys(state.inv)
-    .filter(id => ITEMS[id].type === 'prep')
-    .sort((x, y) => ITEMS[x].name.localeCompare(ITEMS[y].name)));
+  put('#inv-ingredients', Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient').sort((x, y) => ITEMS[x].name.localeCompare(ITEMS[y].name)));
+  put('#inv-preps', Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep').sort((x, y) => ITEMS[x].name.localeCompare(ITEMS[y].name)));
   const done = Object.keys(state.inv).filter(id => isDone(id));
   $('#inv-done-wrap').style.display = done.length ? '' : 'none';
   put('#inv-done', done.sort((x, y) => ITEMS[x].name.localeCompare(ITEMS[y].name)));
+  $('#inv-preps-wrap').style.display =
+    Object.keys(state.inv).some(id => ITEMS[id].type === 'prep') ? '' : 'none';
 }
 
 function itemCard(id) {
@@ -562,16 +689,17 @@ function renderSlots() {
       zone.appendChild(el('span', 'slot-hint hand', i === 0 ? 'algo…' : '…con algo'));
     }
   });
+  $('#mesa-clear').style.visibility = (slots[0] || slots[1]) ? 'visible' : 'hidden';
 }
 
 function renderRiddle() {
   const note = $('#cocina-riddle');
   const step = CUADERNOS[state.active].steps.find(s => !knows(s.result) && !s.variant);
   if (!step) {
-    note.innerHTML = `<span class="hand">${ITEMS[CUADERNOS[state.active].dish].name}: recuperado. Cocina de memoria y vende.</span>`;
+    note.innerHTML = `<span class="hand">✓ ${ITEMS[CUADERNOS[state.active].dish].name} recuperado. Cocínalo de memoria.</span>`;
     return;
   }
-  note.innerHTML = `<span class="riddle-label">el cuaderno murmura…</span> <span class="hand">“${step.hint}”</span>`;
+  note.innerHTML = `<span class="riddle-label">el cuaderno murmura…</span><br><span class="hand">“${step.hint}”</span>`;
 }
 
 function placeInSlot(id, index = null) {
@@ -588,6 +716,12 @@ function placeInSlot(id, index = null) {
   if (slots[0] && slots[1]) setTimeout(attemptCombine, 420);
 }
 
+function clearMesa() {
+  if (combining) return;
+  slots[0] = slots[1] = null;
+  renderCocina();
+}
+
 /* --- El motor: paso canon → regla → bloqueo → mezcla rara --- */
 
 function attemptCombine() {
@@ -596,10 +730,7 @@ function attemptCombine() {
   const [x, y] = slots;
   const surface = $('#cocina-surface');
 
-  const consume = () => [x, y].forEach(id => {
-    if (isTool(id)) wearTool(id);
-    else addItem(id, -1);
-  });
+  const consume = () => [x, y].forEach(id => { if (isTool(id)) wearTool(id); else addItem(id, -1); });
   const finish = () => {
     slots[0] = slots[1] = null;
     combining = false;
@@ -615,7 +746,6 @@ function attemptCombine() {
     setTimeout(() => { surface.classList.remove('shake'); slots[0] = slots[1] = null; combining = false; renderCocina(); }, 450);
   };
 
-  /* 1. paso canon de un cuaderno tuyo */
   const step = findStep(x, y);
   if (step && owns(step.cuaderno)) {
     consume();
@@ -624,22 +754,12 @@ function attemptCombine() {
     buzz([30, 40, 60]);
     setTimeout(() => {
       surface.classList.remove('success');
-      if (!knows(step.result)) {
-        slots[0] = slots[1] = null;
-        combining = false;
-        discover(step.result, step, 'canon');
-        tickAction();
-        checkRescue();
-      } else {
-        floaty(`+1 ${ITEMS[step.result].name}`);
-        toast(MICROCOPY.crafted, 'seal');
-        finish();
-      }
+      if (!knows(step.result)) { slots[0] = slots[1] = null; combining = false; discover(step.result, step, 'canon'); tickAction(); checkRescue(); }
+      else { floaty(`+1 ${ITEMS[step.result].name}`); toast(MICROCOPY.crafted, 'seal'); finish(); }
     }, 620);
     return;
   }
 
-  /* 2. reglas: inventos y fallos explícitos */
   const rule = findRule(x, y);
   if (rule) {
     consume();
@@ -649,28 +769,18 @@ function attemptCombine() {
     buzz(ok ? [30, 40, 60] : 80);
     setTimeout(() => {
       surface.classList.remove('success', 'shake');
-      if (ok && !knows(rule.result)) {
-        slots[0] = slots[1] = null;
-        combining = false;
-        discover(rule.result, rule, 'creative');
-        tickAction();
-        checkRescue();
-      } else {
-        toast(rule.msg, ok ? 'seal' : 'soft');
-        finish();
-      }
+      if (ok && !knows(rule.result)) { slots[0] = slots[1] = null; combining = false; discover(rule.result, rule, 'creative'); tickAction(); checkRescue(); }
+      else { toast(rule.msg, ok ? 'seal' : 'soft'); finish(); }
     }, ok ? 620 : 500);
     return;
   }
 
-  /* 3. cosas terminadas no vuelven a la mesa (salvo regla) */
   if (isDone(x) || isDone(y)) {
     reject(ITEMS[x].type === 'junk' || ITEMS[y].type === 'junk' ? MICROCOPY.junkOnMesa : MICROCOPY.dishOnMesa);
     return;
   }
   if (isTool(x) && isTool(y)) { reject(MICROCOPY.toolsClank); return; }
 
-  /* 4. fallo genérico */
   consume();
   addItem('mezcla_rara', 1);
   surface.classList.add('shake');
@@ -688,12 +798,12 @@ function floaty(text) {
 /* ---------- Descubrimiento ---------- */
 
 function discover(id, source, kind) {
+  const wasFirstDish = isDish(id) && !realDishes().length && !ITEMS[id].creative;
   state.discovered.push(id);
   const item = ITEMS[id];
 
   let reward = kind === 'creative' ? REWARDS.creative
-    : item.type === 'dish'
-      ? (item.meta ? REWARDS.dishMeta : item.variant ? REWARDS.dishVariant : REWARDS.dish)
+    : item.type === 'dish' ? (item.meta ? REWARDS.dishMeta : item.variant ? REWARDS.dishVariant : REWARDS.dish)
       : REWARDS.step;
 
   let newTech = null;
@@ -706,6 +816,7 @@ function discover(id, source, kind) {
 
   if (item.type === 'dish') {
     if (!state.dishesDone.includes(id)) state.dishesDone.push(id);
+    state.firstDishPending = wasFirstDish;
     save();
     showCelebration(id, source, reward, kind);
   } else {
@@ -718,8 +829,7 @@ function showPaso(id, source, reward, newTech) {
   $('#paso-icon').innerHTML = iconOf(id);
   $('#paso-name').textContent = ITEMS[id].name;
   $('#paso-line').textContent = source.line || source.msg || '';
-  $('#paso-tech').innerHTML = newTech
-    ? `Saber registrado: <span class="tech-chip">${iconOf(newTech)}</span> <em>${ITEMS[newTech].name}</em>` : '';
+  $('#paso-tech').innerHTML = newTech ? `Saber registrado: <span class="tech-chip">${iconOf(newTech)}</span> <em>${ITEMS[newTech].name}</em>` : '';
   $('#paso-reward').textContent = `+S/ ${S(reward)}`;
   $('#modal-paso').classList.add('open');
 }
@@ -741,8 +851,7 @@ function showCelebration(id, source, reward, kind) {
   $('#celebra-city').textContent = c ? `${c.city} · ${c.region}` : 'creación propia';
   $('#celebra-line').textContent = source.line || source.msg || '';
   $('#celebra-reward').textContent = `+S/ ${S(reward)}`;
-  $('#celebra-sell').textContent = item.sell
-    ? `Se vende a S/ ${S(item.sell)}. La clientela ya puede pedirlo.` : '';
+  $('#celebra-sell').textContent = item.sell ? `Se vende a S/ ${S(item.sell)}. La clientela ya puede pedirlo.` : '';
   const confetti = $('#confetti');
   confetti.innerHTML = '';
   for (let i = 0; i < 24; i++) {
@@ -757,6 +866,11 @@ function showCelebration(id, source, reward, kind) {
 
 function closeCelebration() {
   $('#modal-celebra').classList.remove('open');
+  if (state.firstDishPending) {
+    state.firstDishPending = false;
+    save();
+    toast(MICROCOPY.firstDish, 'seal');
+  }
   if (celebratedCuaderno) openReceta(celebratedCuaderno);
   else show('cocina');
 }
@@ -766,7 +880,6 @@ function closeCelebration() {
    ============================================================ */
 
 function renderMercado() {
-  /* cuadernos */
   const grid = $('#market-books');
   const pendientes = CUADERNO_ORDER.filter(cid => !owns(cid));
   $('#market-books-section').style.display = pendientes.length ? '' : 'none';
@@ -785,7 +898,6 @@ function renderMercado() {
     grid.appendChild(card);
   });
 
-  /* ingredientes */
   const ing = $('#market-ingredients');
   ing.innerHTML = '';
   marketIngredients().forEach(id => {
@@ -798,17 +910,11 @@ function renderMercado() {
       <span class="price tag">S/ ${S(item.price)}</span>`;
     card.addEventListener('click', () => {
       if (state.coins < item.price) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
-      addCoins(-item.price);
-      addItem(id, 1);
-      tickAction();
-      save();
-      buzz(25);
-      renderMercado();
+      addCoins(-item.price); addItem(id, 1); tickAction(); save(); buzz(25); renderMercado();
     });
     ing.appendChild(card);
   });
 
-  /* utensilios y servicios */
   const tools = $('#market-tools');
   tools.innerHTML = '';
   marketTools().forEach(id => {
@@ -821,16 +927,10 @@ function renderMercado() {
       <span class="price tag">S/ ${S(item.price)}</span>`;
     card.addEventListener('click', () => {
       if (state.coins < item.price) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
-      addCoins(-item.price);
-      addItem(id, 1);
-      tickAction();
-      save();
-      toast('Pesa, pero vale cada sucre.', 'seal');
-      renderMercado();
+      addCoins(-item.price); addItem(id, 1); tickAction(); save(); toast('Pesa, pero vale cada sucre.', 'seal'); renderMercado();
     });
     tools.appendChild(card);
   });
-  /* afilador */
   state.tools.filter(id => ITEMS[id].wear).forEach(id => {
     const left = state.toolWear[id] ?? ITEMS[id].wear;
     if (left >= ITEMS[id].wear) return;
@@ -843,17 +943,12 @@ function renderMercado() {
       <span class="price tag">S/ ${S(cost)}</span>`;
     card.addEventListener('click', () => {
       if (state.coins < cost) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
-      addCoins(-cost);
-      state.toolWear[id] = ITEMS[id].wear;
-      save();
-      toast('El afilador le devuelve el canto al cuchillo.', 'seal');
-      renderMercado();
+      addCoins(-cost); state.toolWear[id] = ITEMS[id].wear; save(); toast('El afilador le devuelve el canto al cuchillo.', 'seal'); renderMercado();
     });
     tools.appendChild(card);
   });
   $('#market-tools-section').style.display = tools.children.length ? '' : 'none';
 
-  /* venta y basura */
   const sell = $('#market-sell');
   sell.innerHTML = '';
   const sellables = Object.keys(state.inv).filter(id => (ITEMS[id].sell || ITEMS[id].type === 'junk') && count(id) > 0);
@@ -868,15 +963,12 @@ function renderMercado() {
       card.innerHTML = `
         <span class="icon">${iconOf(id)}</span>
         <span class="name">${item.name} <small class="have">×${count(id)}</small></span>
-        <span class="price tag ${worthless ? 'toss-tag' : 'sell-tag'}">${worthless ? 'ni los chanchitos: botar' : `vender +S/ ${S(item.sell)}`}</span>`;
+        <span class="price tag ${worthless ? 'toss-tag' : 'sell-tag'}">${worthless ? 'botar' : `+S/ ${S(item.sell)}`}</span>`;
       card.addEventListener('click', () => {
         addItem(id, -1);
         if (!worthless) { addCoins(item.sell); toast(MICROCOPY.sold, 'seal'); }
         else toast(MICROCOPY.tossed, 'soft');
-        tickAction();
-        save();
-        buzz(25);
-        renderMercado();
+        tickAction(); save(); buzz(25); renderMercado();
       });
       sell.appendChild(card);
     });
@@ -901,27 +993,43 @@ function shakeCard(card) {
 }
 
 /* ============================================================
+   ONBOARDING
+   ============================================================ */
+
+function maybeIntro() {
+  if (state.seenIntro) return;
+  $('#modal-intro').classList.add('open');
+}
+
+function closeIntro() {
+  state.seenIntro = true;
+  save();
+  $('#modal-intro').classList.remove('open');
+}
+
+/* ============================================================
    ARRANQUE
    ============================================================ */
 
 function bindEvents() {
-  $('#btn-continue').addEventListener('click', () => show('shelf'));
+  $('#btn-continue').addEventListener('click', () => { show('cocina'); maybeIntro(); });
   $('#btn-new').addEventListener('click', () => {
     const fresh = !load();
     if (fresh || confirm('¿Empezar una hueca nueva? La actual se perderá.')) {
       state = newState();
       save();
       renderHud();
-      show('shelf');
+      show('cocina');
+      maybeIntro();
     }
   });
 
-  $$('#tabbar .tab-btn').forEach(b =>
-    b.addEventListener('click', () => show(b.dataset.screen)));
+  $$('#tabbar .tab-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
   $('#receta-back').addEventListener('click', () => show('shelf'));
-  $('#btn-cover').addEventListener('click', () => show('cover'));
+  $('#hud-mode').addEventListener('click', toggleMode);
   $('#quick-lona').addEventListener('click', () => show('mercado'));
   $('#quick-cocina').addEventListener('click', () => show('cocina'));
+  $('#mesa-clear').addEventListener('click', clearMesa);
 
   [0, 1].forEach(i => {
     const zone = $('#slot-' + i);
@@ -933,15 +1041,19 @@ function bindEvents() {
       const id = e.dataTransfer.getData('text/plain');
       if (id && ITEMS[id]) placeInSlot(id, i);
     });
-    zone.addEventListener('click', () => {
-      if (!combining && slots[i]) { slots[i] = null; renderCocina(); }
-    });
+    zone.addEventListener('click', () => { if (!combining && slots[i]) { slots[i] = null; renderCocina(); } });
   });
 
   $('#ticket-serve').addEventListener('click', () => { if (customer) resolveCustomer(true); });
   $('#ticket-miss').addEventListener('click', () => { if (customer) resolveCustomer(false); });
   $('#arriendo-pay').addEventListener('click', resolveRent);
   $('#cierre-reopen').addEventListener('click', reopenHueca);
+  $('#salubridad-ok').addEventListener('click', resolveSalubridad);
+  $('#milestone-close').addEventListener('click', () => {
+    $('#modal-milestone').classList.remove('open');
+    if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 400);
+  });
+  $('#intro-close').addEventListener('click', closeIntro);
 
   $('#paso-close').addEventListener('click', closePaso);
   $('#modal-paso').addEventListener('click', (e) => { if (e.target === $('#modal-paso')) closePaso(); });
@@ -955,6 +1067,8 @@ function init() {
   const saved = load();
   state = saved || newState();
   $('#btn-continue').textContent = saved ? 'Continuar' : 'Abrir la hueca';
+  $('#btn-continue').style.display = saved ? '' : 'none';
+  $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
   $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
   renderHud();
