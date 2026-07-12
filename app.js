@@ -593,6 +593,7 @@ function renderCocina() {
   renderChips();
   renderInventory();
   renderSlots();
+  renderMesaAction();
   renderRiddle();
 }
 
@@ -677,6 +678,11 @@ function itemCard(id) {
 }
 
 function renderSlots() {
+  /* el resultado que queda en la mesa está respaldado por el inventario;
+     si se acabó (vendido/servido), limpiar la casilla */
+  [0, 1].forEach(i => {
+    if (slots[i] && !isTool(slots[i]) && count(slots[i]) <= 0) slots[i] = null;
+  });
   [0, 1].forEach(i => {
     const zone = $('#slot-' + i);
     zone.innerHTML = '';
@@ -692,6 +698,43 @@ function renderSlots() {
   $('#mesa-clear').style.visibility = (slots[0] || slots[1]) ? 'visible' : 'hidden';
 }
 
+/* ---- Acción contextual: el verbo del recetario ---- */
+
+function verbOf(sr) {
+  if (sr.tech) return { label: ITEMS[sr.tech].name, icon: sr.tech };
+  const tool = [sr.a, sr.b].find(id => isTool(id));
+  const map = { olla: 'hervir', sarten: 'dorar', pilon: 'majar', molino: 'moler', cuchillo: 'pelar', tabla: 'mezclar' };
+  if (tool && map[tool]) return { label: ITEMS[map[tool]].name, icon: map[tool] };
+  if (isDish(sr.result)) return { label: 'Servir', icon: 'mezclar' };
+  return { label: 'Mezclar', icon: 'mezclar' };
+}
+
+function actionFor(x, y) {
+  const step = findStep(x, y);
+  if (step && owns(step.cuaderno)) return { kind: 'step', source: step, result: step.result, verb: verbOf(step), good: true };
+  const rule = findRule(x, y);
+  if (rule) return { kind: 'rule', source: rule, result: rule.result, verb: verbOf(rule), good: rule.kind === 'creative' };
+  return null;
+}
+
+function renderMesaAction() {
+  const zone = $('#mesa-action');
+  zone.innerHTML = '';
+  if (combining) return;
+  const [x, y] = slots;
+  if (!x || !y) return;
+  const act = actionFor(x, y);
+  if (!act) {
+    const i = (x.length + y.length) % MICROCOPY.noCombo.length; /* estable, sin parpadeo */
+    zone.innerHTML = `<span class="mesa-nope">${MICROCOPY.noCombo[i]}</span>`;
+    return;
+  }
+  const btn = el('button', 'cook-btn', `<span class="cook-ic">${iconOf(act.verb.icon)}</span> ${act.verb.label}`);
+  btn.type = 'button';
+  btn.addEventListener('click', cook);
+  zone.appendChild(btn);
+}
+
 function renderRiddle() {
   const note = $('#cocina-riddle');
   const step = CUADERNOS[state.active].steps.find(s => !knows(s.result) && !s.variant);
@@ -705,15 +748,14 @@ function renderRiddle() {
 function placeInSlot(id, index = null) {
   if (combining) return;
   if (isTool(id) && isDull(id)) { toast(MICROCOPY.dullKnife, 'soft'); return; }
+  /* tocar un utensilio que ya está en la mesa lo retira */
+  if (isTool(id) && slots.includes(id) && index === null) { slots[slots.indexOf(id)] = null; renderCocina(); return; }
   const inSlots = slots.filter(s => s === id).length;
   if (!isTool(id) && count(id) - inSlots <= 0) { toast('No te queda más. La lona tiene.', 'soft'); return; }
-  if (isTool(id) && slots.includes(id)) { toast('Ese ya está en la mesa.', 'soft'); return; }
   let i = index;
-  if (i === null) i = slots[0] === null ? 0 : slots[1] === null ? 1 : null;
-  if (i === null) { toast('La mesa está llena. Toca algo para retirarlo.'); return; }
+  if (i === null) i = slots[0] === null ? 0 : slots[1] === null ? 1 : 1; /* llena → reemplaza la 2ª, conserva la base */
   slots[i] = id;
   renderCocina();
-  if (slots[0] && slots[1]) setTimeout(attemptCombine, 420);
 }
 
 function clearMesa() {
@@ -722,71 +764,46 @@ function clearMesa() {
   renderCocina();
 }
 
-/* --- El motor: paso canon → regla → bloqueo → mezcla rara --- */
+/* --- El motor: se dispara con el botón de acción --- */
 
-function attemptCombine() {
+function cook() {
   if (!slots[0] || !slots[1] || combining) return;
-  combining = true;
   const [x, y] = slots;
+  const act = actionFor(x, y);
+  if (!act) return;
+  combining = true;
   const surface = $('#cocina-surface');
-
+  $('#mesa-action').innerHTML = '';
   const consume = () => [x, y].forEach(id => { if (isTool(id)) wearTool(id); else addItem(id, -1); });
-  const finish = () => {
-    slots[0] = slots[1] = null;
-    combining = false;
-    renderCocina();
-    tickAction();
-    checkRescue();
-    save();
-  };
-  const reject = (msg) => {
-    surface.classList.add('shake');
-    toast(msg, 'soft');
-    buzz(50);
-    setTimeout(() => { surface.classList.remove('shake'); slots[0] = slots[1] = null; combining = false; renderCocina(); }, 450);
-  };
 
-  const step = findStep(x, y);
-  if (step && owns(step.cuaderno)) {
+  if (act.good) {
     consume();
-    addItem(step.result, 1);
+    addItem(act.result, 1);
     surface.classList.add('success');
     buzz([30, 40, 60]);
     setTimeout(() => {
       surface.classList.remove('success');
-      if (!knows(step.result)) { slots[0] = slots[1] = null; combining = false; discover(step.result, step, 'canon'); tickAction(); checkRescue(); }
-      else { floaty(`+1 ${ITEMS[step.result].name}`); toast(MICROCOPY.crafted, 'seal'); finish(); }
-    }, 620);
+      slots[0] = act.result; slots[1] = null;   /* el resultado se queda en la mesa */
+      combining = false;
+      if (!knows(act.result)) discover(act.result, act.source, act.kind === 'step' ? 'canon' : 'creative');
+      else { floaty(`+1 ${ITEMS[act.result].name}`); renderCocina(); }
+      tickAction(); checkRescue(); save();
+    }, 560);
     return;
   }
 
-  const rule = findRule(x, y);
-  if (rule) {
-    consume();
-    addItem(rule.result, 1);
-    const ok = rule.kind === 'creative';
-    surface.classList.add(ok ? 'success' : 'shake');
-    buzz(ok ? [30, 40, 60] : 80);
-    setTimeout(() => {
-      surface.classList.remove('success', 'shake');
-      if (ok && !knows(rule.result)) { slots[0] = slots[1] = null; combining = false; discover(rule.result, rule, 'creative'); tickAction(); checkRescue(); }
-      else { toast(rule.msg, ok ? 'seal' : 'soft'); finish(); }
-    }, ok ? 620 : 500);
-    return;
-  }
-
-  if (isDone(x) || isDone(y)) {
-    reject(ITEMS[x].type === 'junk' || ITEMS[y].type === 'junk' ? MICROCOPY.junkOnMesa : MICROCOPY.dishOnMesa);
-    return;
-  }
-  if (isTool(x) && isTool(y)) { reject(MICROCOPY.toolsClank); return; }
-
+  /* fallo explícito del recetario (arruina, con su mensaje) */
   consume();
-  addItem('mezcla_rara', 1);
+  addItem(act.result, 1);
   surface.classList.add('shake');
-  toast(pick(MICROCOPY.junk), 'soft');
   buzz(80);
-  setTimeout(() => { surface.classList.remove('shake'); finish(); }, 500);
+  setTimeout(() => {
+    surface.classList.remove('shake');
+    slots[0] = slots[1] = null;
+    combining = false;
+    toast(act.source.msg, 'soft');
+    renderCocina(); tickAction(); checkRescue(); save();
+  }, 500);
 }
 
 function floaty(text) {

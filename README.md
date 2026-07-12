@@ -22,12 +22,19 @@ Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
    de tres pasos explica descubrir / atender / sobrevivir.
 1. Los cuadernos dan **acertijos**, no instrucciones; cada paso tiene botón
    **Intentar** (te lleva a la cocina) y **Espiar** (paga por ver el par exacto).
-2. Las recetas son realistas: el verde **se pela** antes de cocerse, el
+2. En la cocina pones dos cosas en la mesa y pulsas el **botón de acción**
+   con el verbo del recetario (pelar, hervir, majar, mezclar, dorar…). El
+   **resultado se queda en la mesa** para encadenar el siguiente paso sin
+   volver a la despensa. Los pasos están redactados como un **recetario real**
+   simplificado, así que sirve también como recetario de verdad.
+   Las recetas son realistas: el verde **se pela** antes de cocerse, el
    pescado se limpia, el choclo pasa por un **molino** que hay que comprar.
    El **cuchillo se desafila** con el uso; el afilador cobra en la lona.
-3. Equivocarse tiene consecuencias explícitas: cocer el verde con cáscara
-   da *verde amargo*, el limón corta la leche… Algunos desastres se venden
-   a los chanchitos (S/ 1.000); otros **ni los chanchitos** — se botan.
+3. Dos cosas sin receta válida (dos crudos, un limón y un verde) **no
+   penalizan**: solo avisan "prepáralos primero". Solo los **errores
+   explícitos** arruinan: cocer el verde con cáscara da *verde amargo*, el
+   limón corta la leche… Algunos desastres se venden a los chanchitos
+   (S/ 1.000); otros **ni los chanchitos** — se botan.
 4. Ser creativo paga: hay combinaciones **fuera del recetario** que
    producen inventos vendibles (bolón doble queso, humita extra queso).
 5. Los platos terminados no vuelven a la mesa: se **venden** en la lona o
@@ -63,7 +70,8 @@ HTML/CSS/JS vanilla, sin backend. **Todo el diseño del juego vive en
 | `REWARDS` / precios | Toda la economía |
 
 El motor (`app.js`) resuelve cada combinación en orden:
-**paso canon → regla → bloqueo de terminados → mezcla rara genérica.**
+**paso canon → regla (invento/fallo) → sin interacción (no penaliza).**
+La combinación se dispara con el botón de acción; nunca es automática.
 
 | Archivo | Rol |
 |---|---|

@@ -218,6 +218,9 @@ ICONS.moler = glyph('#e0d5c2',
   `<circle cx="32" cy="32" r="12" fill="none" stroke="${INK}" stroke-width="2.8"/>
    <circle cx="32" cy="32" r="3" fill="${INK}"/>
    <rect x="41" y="14" width="4" height="12" rx="2" fill="${INK}" transform="rotate(32 43 20)"/>`);
+ICONS.limpiar = glyph('#dbe7ea',
+  `<path d="M18 40 Q14 30 24 24 L40 16 Q46 20 44 26 L28 36 Q22 40 18 40 Z" fill="none" stroke="${INK}" stroke-width="2.6"/>
+   <path d="M22 44 Q26 40 30 44 M30 46 Q34 42 38 46" stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`);
 
 /* ============ Preparaciones ============ */
 

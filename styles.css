@@ -321,6 +321,23 @@ svg { display: block; width: 100%; height: 100%; }
 @keyframes pop { 40% { transform: scale(1.04); } }
 .floaty { position: absolute; left: 50%; top: 20%; transform: translateX(-50%); font-size: 1.4rem; color: var(--sage-d); pointer-events: none; animation: float-up 1.05s ease forwards; white-space: nowrap; }
 @keyframes float-up { to { transform: translate(-50%, -34px); opacity: 0; } }
+.slot.filled { position: relative; }
+.slot.filled::after { content: '×'; position: absolute; top: .2rem; right: .35rem; font-size: .9rem; color: var(--ink-soft); opacity: .5; }
+
+.mesa-action { min-height: 3rem; display: flex; align-items: center; justify-content: center; margin-top: .7rem; }
+.cook-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-size: 1.05rem; font-weight: 600;
+  background: var(--sage); color: #fff;
+  padding: .6rem 1.5rem; border-radius: 999px;
+  box-shadow: 0 3px 0 var(--sage-d), var(--shadow-sm);
+  animation: cook-in .25s ease both;
+}
+.cook-btn:active { transform: translateY(3px); box-shadow: 0 0 0 var(--sage-d); }
+.cook-ic { width: 1.6rem; height: 1.6rem; background: rgba(255,255,255,.35); border-radius: 50%; padding: 2px; }
+@keyframes cook-in { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+.mesa-nope { font-family: var(--hand); font-size: 1.1rem; color: var(--ink-soft); opacity: .85; }
+
 .mesa-clear { font-size: .74rem; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; margin-top: .5rem; }
 .cocina-riddle { font-size: 1.2rem; color: var(--sky); margin-top: .5rem; line-height: 1.3; }
 .riddle-label { font-family: var(--serif); font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
