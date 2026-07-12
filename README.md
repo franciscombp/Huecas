@@ -16,7 +16,33 @@ npx serve .        # o: python3 -m http.server
 
 Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 
-## El bucle (v5)
+## La cocina (v7)
+
+La **cocina cabe en una pantalla, sin scroll**, estilo Plants vs Zombies:
+arriba la **cola de clientes** (avatares con el plato que piden y una barra de
+paciencia), en el centro la **mesa de trabajo**, y abajo la **despensa con
+pestañas** (Utensilios · Ingredientes · Listos).
+
+- Pones dos cosas en la mesa y pulsas la acción. Mientras **no has descubierto**
+  ese paso el botón dice **“Usar”** (sin spoiler); una vez descubierto muestra
+  el verbo (Pelar, Freír, Majar…). El resultado se queda en la mesa para encadenar.
+- **Toda combinación hace algo.** Si mezclas cosas que no casan (plátano crudo
+  con queso, verde con leche…) igual se hace, pero queda una **mezcla inútil**
+  que solo estorba y **se pudre con el tiempo** si no la botas. El aviso es a
+  **pantalla completa** con lógica realista, no un snackbar.
+- Un **plato listo** se vende o se sirve desde la propia cocina (pestaña Listos).
+  Si lo vuelves a poner al fuego, **se quema**.
+
+## Huecas por región
+
+Empiezas en la **hueca costeña** con el bolón. Su hermano el **tigrillo**
+comparte la misma base (verde majado) pero lleva huevo y se vende más caro.
+Al dominar 2 platos costeños se abre la **hueca serrana** (humita, llapingacho,
+fanesca). El **arriendo sube cada mes**: con puro bolón no alcanza —hay que
+aprender platos más caros o diversificar. (Validado: el bolón solo quiebra;
+bolón + tigrillo sostiene la hueca.)
+
+## El bucle
 
 0. **Empieza suave**: solo tú, la mesa y el cuaderno del bolón. Un onboarding
    de tres pasos explica descubrir / atender / sobrevivir.
@@ -30,19 +56,19 @@ Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
    Las recetas son realistas: el verde **se pela** antes de cocerse, el
    pescado se limpia, el choclo pasa por un **molino** que hay que comprar.
    El **cuchillo se desafila** con el uso; el afilador cobra en la lona.
-3. Dos cosas sin receta válida (dos crudos, un limón y un verde) **no
-   penalizan**: solo avisan "prepáralos primero". Solo los **errores
-   explícitos** arruinan: cocer el verde con cáscara da *verde amargo*, el
-   limón corta la leche… Algunos desastres se venden a los chanchitos
-   (S/ 1.000); otros **ni los chanchitos** — se botan.
+3. **Toda combinación hace algo.** Errores con lógica realista: cocer el verde
+   con cáscara da *verde amargo*; plátano crudo con queso, *engrudo*; el limón
+   corta la leche. Lo inútil solo estorba y **se pudre** si no lo botas. El
+   aviso es a **pantalla completa**.
 4. Ser creativo paga: hay combinaciones **fuera del recetario** que
    producen inventos vendibles (bolón doble queso, humita extra queso).
-5. Los platos terminados no vuelven a la mesa: se **venden** en la lona o
-   se **sirven** cuando un cliente aparece pidiendo algo que ya sabes hacer.
-   Servir sube tu **fama** (paga mejor, con propina); dejar ir a alguien la baja.
-6. Cada 5 clientes, **don Aurelio pasa por el arriendo** (S/ 15.000).
-   Con buena fama te fía una vez; sin sucres y sin fama, **la hueca cierra**
-   — pero las recetas, técnicas y utensilios se quedan contigo para reabrir.
+5. Los platos listos se **venden o sirven desde la propia cocina** (pestaña
+   Listos) o cuando un cliente los pide. Servir sube tu **fama** (paga mejor,
+   con propina); dejar ir a alguien la baja. Recalentar un plato lo **quema**.
+6. Cada 6 clientes, **don Aurelio pasa por el arriendo, que sube cada mes**
+   (S/ 10.000, luego 16.000, 22.000…). Con buena fama te fía una vez; sin
+   sucres y sin fama, **la hueca cierra** — pero recetas, técnicas y utensilios
+   se quedan contigo para reabrir.
 7. **La presión escala**: mientras más platos dominas, más seguido llegan
    los clientes y menos paciencia tienen (tabla `HUECA.pressure`).
 8. **Salubridad**: si 3 clientes seguidos se van sin servir, llega la
@@ -54,7 +80,7 @@ Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 10. **Modo tranquilo**: el botón Servicio/Tranquilo del HUD pausa la
     clientela, el arriendo y salubridad para solo descubrir recetas con calma.
 
-Guardado en `localStorage` (`huecas_save_v5`).
+Guardado en `localStorage` (`huecas_save_v7`).
 
 ## Arquitectura
 

@@ -54,6 +54,8 @@ const ITEMS = {
                    note: 'Salado y viajero. Llega una vez al año.' },
   hoja:          { name: 'Hoja',          type: 'ingredient', price: 1,
                    note: 'De choclo o de achira. Envuelve y perfuma.' },
+  huevo:         { name: 'Huevo',         type: 'ingredient', price: 1,
+                   note: 'De campo, yema naranja. El alma del tigrillo.' },
 
   /* Utensilios */
   cuchillo: { name: 'Cuchillo', type: 'tool', wear: 6, sharpenCost: 2,
@@ -74,11 +76,15 @@ const ITEMS = {
   dorar:    { name: 'Dorar',    type: 'technique', note: 'El fuego firma al final.' },
   mezclar:  { name: 'Mezclar',  type: 'technique', note: 'Unir sin apurar.' },
   moler:    { name: 'Moler',    type: 'technique', note: 'Vuelta a vuelta, el grano se rinde.' },
+  freir:    { name: 'Freír',    type: 'technique', note: 'Aceite caliente y punto justo, ni un segundo más.' },
+  revolver: { name: 'Revolver', type: 'technique', note: 'Con cuchara de palo, sin dejar que se pegue.' },
 
   /* Preparaciones */
   verde_pelado:     { name: 'Verde pelado',        type: 'prep' },
+  verde_frito:      { name: 'Verde frito',         type: 'prep' },
   verde_cocido:     { name: 'Verde cocido',        type: 'prep' },
   verde_majado:     { name: 'Verde majado',        type: 'prep' },
+  tigrillo_base:    { name: 'Verde con huevo',     type: 'prep' },
   masa_bolon:       { name: 'Masa de bolón',       type: 'prep' },
   curtido:          { name: 'Curtido',             type: 'prep' },
   pescado_limpio:   { name: 'Pescado limpio',      type: 'prep' },
@@ -95,12 +101,14 @@ const ITEMS = {
   base_fanesca:     { name: 'Base de fanesca',     type: 'prep' },
 
   /* Platos */
-  bolon:       { name: 'Bolón de verde', type: 'dish', sell: 4 },
-  bolon_mixto: { name: 'Bolón mixto',    type: 'dish', sell: 6, variant: true },
-  encebollado: { name: 'Encebollado',    type: 'dish', sell: 8 },
-  humita:      { name: 'Humita',         type: 'dish', sell: 6 },
-  llapingacho: { name: 'Llapingacho',    type: 'dish', sell: 6 },
-  fanesca:     { name: 'Fanesca',        type: 'dish', sell: 16, meta: true },
+  bolon:         { name: 'Bolón de verde', type: 'dish', sell: 3 },
+  bolon_mixto:   { name: 'Bolón mixto',    type: 'dish', sell: 5, variant: true },
+  tigrillo:      { name: 'Tigrillo',       type: 'dish', sell: 7 },
+  tigrillo_mixto:{ name: 'Tigrillo mixto', type: 'dish', sell: 9, variant: true },
+  encebollado:   { name: 'Encebollado',    type: 'dish', sell: 9 },
+  humita:        { name: 'Humita',         type: 'dish', sell: 6 },
+  llapingacho:   { name: 'Llapingacho',    type: 'dish', sell: 6 },
+  fanesca:       { name: 'Fanesca',        type: 'dish', sell: 18, meta: true },
 
   /* Inventos de la casa (nacen de RULES creativas) */
   bolon_doble_queso: { name: 'Bolón doble queso', type: 'dish', sell: 5, creative: true,
@@ -109,14 +117,20 @@ const ITEMS = {
                        note: 'Invento de la casa. La clientela repite.' },
 
   /* Mezclas y desastres */
-  mezcla_rara:     { name: 'Mezcla rara',     type: 'junk', sell: 1,
+  mezcla_rara:     { name: 'Mezcla rara',     type: 'junk', sell: 1, rots: true,
                      note: 'Nadie sabe qué es. La caserita la compra para los chanchitos.' },
+  engrudo:         { name: 'Engrudo',         type: 'junk', sell: 0, rots: true,
+                     note: 'Masa pegajosa y sin gracia. Ni para pegar afiches.' },
+  podrido:         { name: 'Se pudrió',       type: 'junk', sell: 0,
+                     note: 'Se quedó demasiado y se echó a perder. A la basura, ya.' },
   verde_amargo:    { name: 'Verde amargo',    type: 'junk', sell: 0,
                      note: 'Cocido con cáscara. Ni los chanchitos lo quieren.' },
   leche_cortada:   { name: 'Leche cortada',   type: 'junk', sell: 0,
                      note: 'El ácido la cortó al instante. A botar.' },
   hoja_chamuscada: { name: 'Hoja chamuscada', type: 'junk', sell: 0,
                      note: 'Humo y ceniza. Ni para envolver recuerdos.' },
+  quemado:         { name: 'Plato quemado',   type: 'junk', sell: 0,
+                     note: 'Se recalentó de más y se quemó. La cocina huele a descuido.' },
 };
 
 /* ---------- Reglas extra (LA base administrable) ----------
@@ -147,44 +161,86 @@ const RULES = [
     msg: 'Más queso a la humita. La sierra aprueba.' },
 ];
 
+/* ---------- Percances con lógica realista ----------
+   Combinar sin receta válida SÍ hace algo, pero inútil.
+   Clave: ids del par ordenados y unidos con '|'. Si no hay
+   entrada específica, se usa un mensaje genérico armado con
+   los nombres. Todo esto se muestra a pantalla completa. */
+const MISHAPS = {
+  'queso|verde':  { result: 'engrudo',     title: 'Eso no se ve bien',
+    text: 'Plátano crudo con queso: quedó un engrudo pegajoso, sin cocción ni gracia. No sirve para nada.' },
+  'leche|verde':  { result: 'mezcla_rara', title: 'Mezcla inútil',
+    text: 'Verde con leche se pueden juntar… pero no sirve de nada. Va a estorbar en la cocina y a pudrirse. Mejor bótalo.' },
+  'huevo|verde':  { result: 'mezcla_rara', title: 'Crudo con crudo',
+    text: 'Huevo sobre verde crudo: un batido baboso que nadie se comería. Primero hay que cocinar el verde.' },
+  'leche|queso':  { result: 'mezcla_rara', title: 'No cuajó',
+    text: 'Leche y queso sueltos, sin fuego ni cuajo: solo un charco blanco que se va a cortar.' },
+};
+const MISHAP_GENERIC = {
+  title: 'Eso no se ve bien',
+  text: (a, b) => `Mezclaste ${a} con ${b}. Quedó una masa rara que no sirve para nada; en la cocina solo estorba y con el tiempo se pudre. Mejor bótala.`,
+};
+
 /* ---------- Cuadernos ---------- */
 const CUADERNOS = {
   bolon: {
     dish: 'bolon',
     title: 'El cuaderno del bolón',
-    city: 'Guayaquil', region: 'Costa',
+    city: 'Guayaquil', region: 'costa',
     cost: 0,
     accent: '#9dbd8a',
     blurb: 'el desayuno de la abuela',
-    intro: 'La primera página huele a domingo. Alguien anotó este desayuno con prisa y cariño, y el tiempo le borró la mitad.',
-    grants: ['cuchillo', 'olla', 'pilon', 'sarten', 'verde', 'verde', 'queso', 'queso'],
+    intro: 'La primera página huele a domingo. Es lo primero que aprendiste; con esto abre la hueca cada mañana.',
+    grants: ['cuchillo', 'pilon', 'sarten', 'verde', 'verde', 'verde', 'queso', 'queso'],
     steps: [
-      { a: 'verde',        b: 'cuchillo',   result: 'verde_pelado', tech: 'pelar',
+      { a: 'verde',        b: 'cuchillo', result: 'verde_pelado', tech: 'pelar',
         hint: 'Todo empieza quitándole la cáscara al verde.',
         line: 'Pela los verdes y córtalos en trozos.' },
-      { a: 'verde_pelado', b: 'olla',       result: 'verde_cocido', tech: 'hervir',
-        hint: 'Los trozos pelados necesitan ablandarse.',
-        line: 'Cocínalos en agua con sal hasta que estén blandos.' },
-      { a: 'verde_cocido', b: 'pilon',      result: 'verde_majado', tech: 'majar',
+      { a: 'verde_pelado', b: 'sarten',   result: 'verde_frito',  tech: 'freir',
+        hint: 'Los trozos pelados van al aceite caliente.',
+        line: 'Fríe los trozos hasta que doren por fuera.' },
+      { a: 'verde_frito',  b: 'pilon',    result: 'verde_majado', tech: 'majar',
         hint: 'Aún caliente, se vuelve masa a golpes.',
-        line: 'Maja el verde caliente hasta formar una masa.' },
-      { a: 'verde_majado', b: 'queso',      result: 'masa_bolon',   tech: 'mezclar',
+        line: 'Maja el verde frito hasta formar una masa. (Base del tigrillo también.)' },
+      { a: 'verde_majado', b: 'queso',    result: 'masa_bolon',   tech: 'mezclar',
         hint: 'A la masa le falta lo blanco y salado.',
         line: 'Amasa el verde con queso rallado hasta integrar.' },
-      { a: 'masa_bolon',   b: 'sarten',     result: 'bolon',        tech: 'dorar',
+      { a: 'masa_bolon',   b: 'sarten',   result: 'bolon',        tech: 'dorar',
         hint: 'Forma la bola y dale calor.',
-        line: 'Forma bolas y dóralas en la sartén con un poco de aceite.' },
-      { a: 'masa_bolon',   b: 'chicharron', result: 'bolon_mixto',  variant: true,
+        line: 'Forma bolas y dóralas en la sartén.' },
+      { a: 'masa_bolon',   b: 'chicharron', result: 'bolon_mixto', variant: true,
         hint: 'Hay quien le esconde chicharrón adentro.',
         line: 'Rellena la masa con chicharrón antes de dorar.' },
+    ],
+  },
+
+  tigrillo: {
+    dish: 'tigrillo',
+    title: 'El cuaderno del tigrillo',
+    city: 'Manabí', region: 'costa',
+    cost: 4,
+    accent: '#e0a45c',
+    blurb: 'el hermano con huevo del bolón',
+    intro: 'Comparte casi todo con el bolón: el mismo verde majado, pero revuelto con huevo. Se vende más caro y llena más.',
+    grants: ['huevo', 'huevo', 'verde', 'verde'],
+    steps: [
+      { a: 'verde_majado',  b: 'huevo', result: 'tigrillo_base', tech: 'revolver',
+        hint: 'Al mismo majado del bolón, un huevo.',
+        line: 'Revuelve el verde majado con huevo hasta cuajar.' },
+      { a: 'tigrillo_base', b: 'queso', result: 'tigrillo',
+        hint: 'Corónalo con queso y a servir.',
+        line: 'Integra el queso hasta fundir y sirve bien caliente.' },
+      { a: 'tigrillo_base', b: 'chicharron', result: 'tigrillo_mixto', variant: true,
+        hint: 'Con chicharrón se vuelve fiesta.',
+        line: 'Añade chicharrón desmenuzado para el tigrillo mixto.' },
     ],
   },
 
   encebollado: {
     dish: 'encebollado',
     title: 'El levantamuertos',
-    city: 'Guayaquil', region: 'Puerto',
-    cost: 8,
+    city: 'Guayaquil', region: 'costa',
+    cost: 10,
     accent: '#93a7c4',
     blurb: 'para amanecer el puerto',
     intro: 'Estas páginas saben a madrugada de puerto. La receta está regada en pedazos, como después de una noche larga.',
@@ -214,7 +270,7 @@ const CUADERNOS = {
   humita: {
     dish: 'humita',
     title: 'Tardes de choclo',
-    city: 'Cuenca', region: 'Sierra',
+    city: 'Cuenca', region: 'sierra',
     cost: 8,
     accent: '#e0b45c',
     blurb: 'huele a domingo en la sierra',
@@ -240,7 +296,7 @@ const CUADERNOS = {
   llapingacho: {
     dish: 'llapingacho',
     title: 'La plancha de Ambato',
-    city: 'Ambato', region: 'Sierra',
+    city: 'Ambato', region: 'sierra',
     cost: 8,
     accent: '#d9a0b0',
     blurb: 'doraditas, con corazón de queso',
@@ -262,7 +318,7 @@ const CUADERNOS = {
   fanesca: {
     dish: 'fanesca',
     title: 'El cuaderno de Semana Santa',
-    city: 'Quito', region: 'Sierra',
+    city: 'Quito', region: 'sierra',
     cost: 15,
     accent: '#c98a5b',
     blurb: 'doce granos, una vez al año',
@@ -285,28 +341,43 @@ const CUADERNOS = {
   },
 };
 
-const CUADERNO_ORDER = ['bolon', 'encebollado', 'humita', 'llapingacho', 'fanesca'];
+const CUADERNO_ORDER = ['bolon', 'tigrillo', 'encebollado', 'humita', 'llapingacho', 'fanesca'];
+
+/* ---------- Huecas por región ----------
+   Empiezas en la costa; la sierra se abre cuando la costa camina. */
+const REGIONS = {
+  costa:  { name: 'Hueca costeña', short: 'Costa', accent: '#e0a45c',
+            tagline: 'verde, mar y sartén caliente' },
+  sierra: { name: 'Hueca serrana', short: 'Sierra', accent: '#9a86b0',
+            tagline: 'choclo, papa y olla lenta',
+            unlock: { dishes: 2 } },   /* se abre al dominar 2 platos de la costa */
+};
+const REGION_ORDER = ['costa', 'sierra'];
 
 /* ---------- La hueca: clientes y arriendo ---------- */
 const CLIENTES = [
-  { name: 'Doña Rosa',      icon: 'cliente_rosa' },
-  { name: 'Don Jacinto',    icon: 'cliente_jacinto' },
-  { name: 'La wawa Emilia', icon: 'cliente_wawa' },
+  { name: 'Doña Rosa',         icon: 'cliente_rosa' },
+  { name: 'Don Jacinto',       icon: 'cliente_jacinto' },
+  { name: 'La wawa Emilia',    icon: 'cliente_wawa' },
   { name: 'Aníbal, el chofer', icon: 'cliente_chofer' },
 ];
 
 const HUECA = {
   startRating: 5, maxRating: 10,
-  rentEvery: 5,        /* cada cuántos clientes pasa el dueño */
-  rent: 15,            /* en sucres (miles) */
-  tipMax: 2,           /* propina máxima */
-  /* la presión escala con los platos que ya dominas:
-     más clientes, menos paciencia */
+  queueMax: 3,               /* clientes esperando a la vez, estilo cola */
+  tipMax: 2,
+  /* siempre llegan clientes; el ritmo sube con los platos que dominas */
   pressure: [
-    { dishes: 1, min: 7, max: 10, patience: 90 },
-    { dishes: 2, min: 5, max: 8,  patience: 75 },
-    { dishes: 4, min: 4, max: 6,  patience: 60 },
+    { dishes: 1, spawnMs: 9000,  patience: 70 },
+    { dishes: 2, spawnMs: 7000,  patience: 60 },
+    { dishes: 4, spawnMs: 5500,  patience: 52 },
   ],
+  /* arriendo cada N clientes, y SUBE cada vez: el bolón solo no alcanza */
+  rentEvery: 6,
+  rentBase: 10, rentStep: 6,   /* ciclo 0:10, 1:16, 2:22, 3:28… */
+  /* la clientela pide más los platos que más te piden de fama:
+     al inicio casi todos quieren lo barato; con fama piden lo caro */
+  richPref: 0.5,
 };
 
 /* La autoridad de salubridad: 3 clientes seguidos sin servir
@@ -359,5 +430,15 @@ const MICROCOPY = {
   salubridadClose: 'Llegó salubridad y no había ni un plato listo. Clausurada.',
   calmOn: 'Modo tranquilo: cocina y descubre sin apuros.',
   calmOff: 'Modo servicio: la clientela vuelve a llegar.',
-  firstDish: 'Recuperaste tu primer plato. Ahora la clientela empezará a llegar…',
+  firstDish: 'Recuperaste tu primer plato. Ahora la clientela empieza a llegar…',
+  burned: 'Lo recalentaste y se quemó. A la basura.',
+  rentHint: 'El arriendo sube cada mes. Solo con bolón no vas a alcanzar: aprende platos más caros.',
+  regionUnlock: 'Corrió la voz: puedes abrir una hueca serrana. Los cuadernos de la sierra están en la lona.',
+  sellFromKitchen: 'Vendido desde la cocina.',
+  servedQueue: '¡Servido! Otro cliente contento.',
+  rotted: 'Una mezcla se pudrió en el mesón. Bótala antes de que llegue salubridad.',
+  toolsClank: 'Dos utensilios solos no hacen nada.',
 };
+
+/* Cuánto tarda una mezcla inútil en pudrirse (ms, solo en servicio). */
+const ROT_MS = 45000;

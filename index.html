@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
   <title>Huecas — saberes y sabores</title>
-  <meta name="description" content="Tu hueca en el Ecuador del 2000: descubre recetas, cocina, atiende a la clientela y sobrevive al arriendo.">
+  <meta name="description" content="Heredaste una hueca en el Ecuador del 2000. Descubre recetas, atiende la cola y paga el arriendo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,30 +13,15 @@
 <body>
 <div id="stage">
 
-  <!-- HUD superior -->
+  <!-- HUD -->
   <header id="hud" class="hud hidden">
     <div id="hud-coins-pill" class="hud-pill coins">
       <span class="coin-icon" data-icon="ficha" aria-hidden="true"></span>
       <span id="hud-coins">S/ 0</span>
     </div>
     <div class="hud-hearts" id="hud-hearts" title="Fama de la hueca"></div>
-    <button type="button" id="hud-mode" class="hud-mode" title="Cambiar de modo"></button>
+    <button type="button" id="hud-mode" class="hud-mode" title="Servicio / Tranquilo"></button>
   </header>
-
-  <!-- Ticket de cliente -->
-  <div id="ticket" class="ticket offscreen" role="status" aria-live="polite">
-    <span id="ticket-avatar" class="ticket-avatar"></span>
-    <div class="ticket-body">
-      <p id="ticket-text"></p>
-      <div class="ticket-timerbar"><span id="ticket-bar"></span></div>
-    </div>
-    <span id="ticket-dish" class="ticket-dish"></span>
-    <div class="ticket-actions">
-      <button type="button" id="ticket-serve" class="btn-main small">Servir</button>
-      <button type="button" id="ticket-miss" class="ticket-miss" title="No lo tengo">✕</button>
-    </div>
-    <span class="ticket-time-wrap"><span id="ticket-time"></span></span>
-  </div>
 
   <!-- ================= Portada ================= -->
   <main id="screen-cover" class="screen active">
@@ -46,23 +31,64 @@
         <h1>Huecas</h1>
         <p class="cover-sub">saberes y sabores</p>
         <div class="cover-icons" aria-hidden="true">
-          <span data-icon="bolon"></span><span data-icon="encebollado"></span><span data-icon="humita"></span>
+          <span data-icon="bolon"></span><span data-icon="tigrillo"></span><span data-icon="encebollado"></span>
         </div>
-        <p class="cover-quote">Heredaste una hueca y un recetario incompleto. Descubre, cocina y no dejes que te la cierren.</p>
+        <p class="cover-quote">Te heredaron una hueca costeña y un recetario incompleto. Cocina, atiende la cola y mira cómo subsistir.</p>
         <div class="cover-actions">
           <button type="button" id="btn-continue" class="btn-main">Continuar</button>
-          <button type="button" id="btn-new" class="btn-ghost">Hueca nueva</button>
+          <button type="button" id="btn-new" class="btn-ghost">Abrir la hueca</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- ================= Estantería ================= -->
+  <!-- ================= Cocina (altura fija, sin scroll) ================= -->
+  <main id="screen-cocina" class="screen screen-fixed">
+    <div class="kitchen">
+
+      <div class="k-clients">
+        <div class="k-head">
+          <span id="kitchen-name" class="k-name"></span>
+          <span id="kitchen-sub" class="kitchen-sub"></span>
+        </div>
+        <div id="queue" class="queue"></div>
+      </div>
+
+      <div class="k-stage">
+        <div id="cocina-chips" class="cocina-chips"></div>
+        <div class="mesa">
+          <div id="cocina-surface" class="cocina-surface">
+            <div id="slot-0" class="slot" aria-label="Primera zona"></div>
+            <span class="plus" aria-hidden="true">+</span>
+            <div id="slot-1" class="slot" aria-label="Segunda zona"></div>
+          </div>
+          <div id="mesa-action" class="mesa-action"></div>
+          <div class="mesa-foot">
+            <button type="button" id="mesa-clear" class="mesa-clear">limpiar mesa</button>
+            <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="k-dock">
+        <div id="dock-tabs" class="dock-tabs">
+          <button type="button" class="dock-tab" data-tab="utensilios"><span data-icon="sarten" class="dt-ic"></span>Utensilios</button>
+          <button type="button" class="dock-tab current" data-tab="ingredientes"><span data-icon="verde" class="dt-ic"></span>Ingredientes</button>
+          <button type="button" class="dock-tab" data-tab="listos"><span data-icon="bolon" class="dt-ic"></span>Listos<span id="dock-listos-badge" class="dock-badge"></span></button>
+        </div>
+        <div id="dock-row" class="dock-row"></div>
+        <button type="button" id="quick-lona" class="quick-mini">Ir a la lona del mercado →</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ================= Recetario ================= -->
   <main id="screen-shelf" class="screen">
     <header class="page-head">
       <h2 class="hand">El recetario</h2>
       <div class="shelf-stats">
-        <div class="stat"><span class="stat-n" id="shelf-recipes">0/5</span><span class="stat-l">recetas</span></div>
+        <div class="stat"><span class="stat-n" id="shelf-recipes">0/6</span><span class="stat-l">recetas</span></div>
         <div class="stat"><span class="stat-n" id="shelf-served">0</span><span class="stat-l">servidos</span></div>
       </div>
       <p id="shelf-goal" class="shelf-goal hand"></p>
@@ -71,7 +97,7 @@
     <p class="page-footnote">Toca un cuaderno para ver su receta. Los que faltan se compran en la lona.</p>
   </main>
 
-  <!-- ================= Página de receta ================= -->
+  <!-- ================= Receta ================= -->
   <main id="screen-receta" class="screen">
     <div class="receta-page">
       <button type="button" id="receta-back" class="back-link">← El recetario</button>
@@ -87,51 +113,6 @@
       <p id="receta-progress" class="receta-progress hand"></p>
       <div id="receta-steps" class="receta-steps"></div>
       <button type="button" id="receta-cook-btn" class="btn-main wide">Ir a cocinar</button>
-    </div>
-  </main>
-
-  <!-- ================= Cocina ================= -->
-  <main id="screen-cocina" class="screen">
-    <div class="cocina-wrap">
-      <div id="service-strip" class="service-strip"></div>
-
-      <div class="cocina-top">
-        <div id="cocina-chips" class="cocina-chips"></div>
-      </div>
-
-      <!-- Mesa: el héroe -->
-      <div class="mesa-card">
-        <div id="cocina-surface" class="cocina-surface">
-          <div id="slot-0" class="slot" aria-label="Primera zona"></div>
-          <span class="plus" aria-hidden="true">+</span>
-          <div id="slot-1" class="slot" aria-label="Segunda zona"></div>
-        </div>
-        <div id="mesa-action" class="mesa-action"></div>
-        <button type="button" id="mesa-clear" class="mesa-clear">limpiar mesa</button>
-        <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
-      </div>
-
-      <!-- Despensa -->
-      <div class="inv-wrap">
-        <div class="inv-section">
-          <p class="inv-label"><span class="lbl-dot tools"></span>Utensilios</p>
-          <div id="inv-tools" class="inv-row"></div>
-        </div>
-        <div class="inv-section">
-          <p class="inv-label"><span class="lbl-dot ing"></span>Ingredientes</p>
-          <div id="inv-ingredients" class="inv-row"></div>
-        </div>
-        <div class="inv-section" id="inv-preps-wrap">
-          <p class="inv-label"><span class="lbl-dot prep"></span>En preparación</p>
-          <div id="inv-preps" class="inv-row"></div>
-        </div>
-        <div class="inv-section" id="inv-done-wrap">
-          <p class="inv-label"><span class="lbl-dot done"></span>Listo para vender o servir</p>
-          <div id="inv-done" class="inv-row"></div>
-        </div>
-      </div>
-
-      <button type="button" id="quick-lona" class="quick-link">Ir a la lona del mercado →</button>
     </div>
   </main>
 
@@ -165,13 +146,13 @@
   <!-- ================= Modales ================= -->
   <div id="modal-intro" class="modal" role="dialog" aria-modal="true">
     <div class="paso-card intro-card">
-      <h3 class="paso-name hand">Tu hueca te espera</h3>
+      <h3 class="paso-name hand">Tu hueca costeña</h3>
       <ul class="intro-list">
-        <li><span class="intro-ic" data-icon="tab_cocina"></span><b>Descubre.</b> Pon dos cosas en la mesa y pulsa la acción (pelar, hervir, majar…). El resultado se queda listo para el siguiente paso.</li>
-        <li><span class="intro-ic" data-icon="corazon"></span><b>Atiende.</b> Cuando tengas un plato, la clientela vendrá a pedirlo. Sírvelo a tiempo.</li>
-        <li><span class="intro-ic" data-icon="arriendo"></span><b>Sobrevive.</b> La fama y los sucres pagan el arriendo. 3 clientes sin servir y viene salubridad.</li>
+        <li><span class="intro-ic" data-icon="tab_cocina"></span><b>Descubre.</b> Pon dos cosas en la mesa y pulsa la acción (pelar, freír, majar…). El resultado se queda listo para el siguiente paso.</li>
+        <li><span class="intro-ic" data-icon="corazon"></span><b>Atiende la cola.</b> Los clientes llegan sin parar y piden lo que sabes hacer. Sírveles a tiempo lo que acabas de cocinar.</li>
+        <li><span class="intro-ic" data-icon="arriendo"></span><b>Subsiste.</b> El arriendo sube cada mes: con puro bolón no alcanza. Aprende el tigrillo y platos más caros.</li>
       </ul>
-      <p class="intro-tip hand">¿Sin apuros? Toca <b>Servicio / Tranquilo</b> arriba para pausar la clientela.</p>
+      <p class="intro-tip hand">¿Sin apuros? Toca <b>Servicio/Tranquilo</b> arriba para explorar recetas sin clientela.</p>
       <button type="button" id="intro-close" class="btn-main wide">¡A cocinar!</button>
     </div>
   </div>
@@ -214,6 +195,18 @@
     </div>
   </div>
 
+  <div id="modal-mishap" class="modal" role="dialog" aria-modal="true">
+    <div class="paso-card mishap-card">
+      <span id="mishap-icon" class="paso-icon mishap-icon"></span>
+      <h3 id="mishap-title" class="paso-name hand"></h3>
+      <p id="mishap-text" class="paso-line"></p>
+      <div class="mishap-actions">
+        <button type="button" id="mishap-toss" class="btn-main">Botar</button>
+        <button type="button" id="mishap-keep" class="btn-ghost">Guardar igual</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-salubridad" class="modal" role="dialog" aria-modal="true">
     <div class="paso-card">
       <span id="salubridad-icon" class="paso-icon"></span>
@@ -245,7 +238,6 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <!-- Barra de navegación -->
   <nav id="tabbar" class="tabbar hidden">
     <button type="button" class="tab-btn" data-screen="cocina"><span class="tab-icon" data-icon="tab_cocina"></span>Cocina</button>
     <button type="button" class="tab-btn" data-screen="mercado"><span class="tab-icon" data-icon="tab_mercado"></span>Lona</button>
