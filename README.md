@@ -1,16 +1,14 @@
 # Huecas — saberes y sabores
 
-Juego web cozy de cocina ecuatoriana, con estética de cuaderno de bocetos
-minimalista e ilustraciones chubby propias (SVG inline, sin dependencias).
-Cada **cuaderno** es el recetario incompleto de un plato emblemático de una
-ciudad; se recupera experimentando en la cocina con un inventario que
-**se gasta**.
+Juego web cozy: heredaste una **hueca** en el Ecuador del año 2000 (sí, se
+paga en **sucres**) y un recetario incompleto. Recuperas recetas
+experimentando, cocinas con un inventario que se gasta, atiendes a la
+clientela del barrio y pagas el arriendo. Estética de cuaderno de bocetos
+con ilustraciones chubby propias (SVG inline, sin dependencias).
 
 Jugable en: https://franciscombp.github.io/Huecas/
 
 ## Cómo correrlo localmente
-
-Sin build ni dependencias: abrir `index.html`, o servir la carpeta:
 
 ```bash
 npx serve .        # o: python3 -m http.server
@@ -20,42 +18,48 @@ Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 
 ## El bucle
 
-1. Empiezas con **El cuaderno del bolón** (Guayaquil), unas fichas y una
-   canasta básica. Los pasos del cuaderno son **acertijos**, no instrucciones
-   ("Lo que el racimo dio, el agua caliente lo ablanda").
-2. En la **cocina**, tu despensa está arriba con cantidades. Combinas dos
-   cosas: si aciertas, **consumes los insumos** y ganas la preparación
-   (y fichas si es un paso nuevo). Si fallas, los insumos se pierden en una
-   **mezcla rara** (la caserita la compra para las gallinas a 1 ficha).
-   Los utensilios nunca se gastan.
-3. En la **lona del mercado** compras ingredientes sueltos, compras los
-   cuadernos de otras ciudades, y **vendes** lo que cocinas: cada plato
-   deja margen sobre sus ingredientes, así que puedes cocinar de memoria
-   en serie para financiar el siguiente cuaderno.
-4. Si te atascas: puedes "espiar la página" de un paso (2 fichas) para ver
-   la combinación exacta, y si te quedas sin nada, la vecina deja fichas
-   en la puerta (rescate automático anti-atasco).
+1. Los cuadernos dan **acertijos**, no instrucciones; cada paso tiene botón
+   **Intentar** (te lleva a la cocina) y **Espiar** (paga por ver el par exacto).
+2. Las recetas son realistas: el verde **se pela** antes de cocerse, el
+   pescado se limpia, el choclo pasa por un **molino** que hay que comprar.
+   El **cuchillo se desafila** con el uso; el afilador cobra en la lona.
+3. Equivocarse tiene consecuencias explícitas: cocer el verde con cáscara
+   da *verde amargo*, el limón corta la leche… Algunos desastres se venden
+   a los chanchitos (S/ 1.000); otros **ni los chanchitos** — se botan.
+4. Ser creativo paga: hay combinaciones **fuera del recetario** que
+   producen inventos vendibles (bolón doble queso, humita extra queso).
+5. Los platos terminados no vuelven a la mesa: se **venden** en la lona o
+   se **sirven** cuando un cliente aparece pidiendo algo que ya sabes hacer.
+   Servir sube tu **fama** (paga mejor, con propina); dejar ir a alguien la baja.
+6. Cada 5 clientes, **don Aurelio pasa por el arriendo** (S/ 15.000).
+   Con buena fama te fía una vez; sin sucres y sin fama, **la hueca cierra**
+   — pero las recetas, técnicas y utensilios se quedan contigo para reabrir.
 
-El progreso se guarda en `localStorage` (clave `huecas_save_v3`).
+Guardado en `localStorage` (`huecas_save_v4`).
 
 ## Arquitectura
 
-HTML/CSS/JS vanilla, sin backend.
+HTML/CSS/JS vanilla, sin backend. **Todo el diseño del juego vive en
+`data.js`**, pensado como base de datos administrable:
+
+| Estructura | Qué controla |
+|---|---|
+| `ITEMS` | Cada nodo: precio de compra, precio de venta (0 = ni los chanchitos), desgaste de utensilios (`wear`, `sharpenCost`) |
+| `CUADERNOS` | Recetas canon por ciudad: pasos con acertijo (`hint`), frase manuscrita (`line`), técnica y canasta de regalo |
+| `RULES` | **La tabla extensible de condiciones**: `kind: 'fail'` (error explícito con resultado y mensaje propios) o `kind: 'creative'` (invento vendible). Se añaden filas sin tocar la lógica |
+| `CLIENTES` / `HUECA` | Vecinos que piden platos, paciencia, frecuencia, arriendo y fama |
+| `REWARDS` / precios | Toda la economía |
+
+El motor (`app.js`) resuelve cada combinación en orden:
+**paso canon → regla → bloqueo de terminados → mezcla rara genérica.**
 
 | Archivo | Rol |
 |---|---|
-| `icons.js` | Set de ilustraciones chubby flat (SVG inline con caritas), helpers `bowl`/`ball`/`face` |
-| `data.js` | **Todo el contenido**: nodos con precios de compra/venta, cuadernos con pasos y acertijos, economía, microcopy |
-| `app.js` | Inventario consumible, combinación libre, mezcla rara, venta, rescate, persistencia |
-| `index.html` | Pantallas: portada, estantería, receta, cocina, mercado, modales |
-| `styles.css` | Papel claro, tinta suave, tarjetas redondeadas, mucho aire |
+| `icons.js` | ~50 ilustraciones chubby flat con caritas (helpers `bowl`/`ball`/`face`/`head`) |
+| `data.js` | Contenido y reglas (ver arriba) |
+| `app.js` | Motor de combinación, inventario, clientes, arriendo, cierre/reapertura |
+| `index.html` / `styles.css` | Pantallas y estética de cuaderno |
 
-### Escalar el contenido
-
-Añadir un plato = un cuaderno nuevo en `CUADERNOS` (pasos con `hint` y
-`line`), sus nodos en `ITEMS` (con `price` o `sell`), su icono en `icons.js`
-y su id en `CUADERNO_ORDER`. El resto de la UI y la economía se generan solos.
-
-La economía está validada por simulación: 144 escenarios (todos los órdenes
-de compra × 0-2 fallos por paso × con/sin espiar) terminan el juego, y cada
-plato vende por encima del costo de sus ingredientes.
+La economía está validada por simulación: 144 recorridos del recetario
+(órdenes de compra × fallos × espiar) terminan bien, y atender la hueca
+cubre el arriendo con fama media en todos los platos.

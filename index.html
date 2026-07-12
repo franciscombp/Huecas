@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Huecas — saberes y sabores</title>
-  <meta name="description" content="Recupera recetarios incompletos del Ecuador: compra, cocina, arruina, vende y vuelve a intentar.">
+  <meta name="description" content="Tu hueca en el Ecuador del 2000: recupera recetas, cocina, atiende a la clientela y paga el arriendo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -12,26 +12,42 @@
 </head>
 <body>
 
-  <!-- HUD de fichas -->
-  <div id="hud" class="hud hidden" title="Fichas">
+  <!-- HUD: sucres y fama -->
+  <div id="hud" class="hud hidden">
     <span class="coin-icon" data-icon="ficha" aria-hidden="true"></span>
-    <span class="coin-count">0</span>
+    <span id="hud-coins" title="Sucres">S/ 0</span>
+    <span class="hud-sep" aria-hidden="true"></span>
+    <span class="heart-icon" data-icon="corazon" aria-hidden="true"></span>
+    <span id="hud-rating" title="Fama de la hueca">5</span>
+  </div>
+
+  <!-- Ticket de cliente -->
+  <div id="ticket" class="ticket offscreen" role="status" aria-live="polite">
+    <span id="ticket-avatar" class="ticket-avatar"></span>
+    <div class="ticket-body">
+      <p id="ticket-text"></p>
+      <p class="ticket-timer">espera <span id="ticket-time"></span></p>
+    </div>
+    <div class="ticket-actions">
+      <button type="button" id="ticket-serve" class="btn-main small">Servir</button>
+      <button type="button" id="ticket-miss" class="btn-ghost small">No tengo</button>
+    </div>
   </div>
 
   <!-- ================= Portada ================= -->
   <main id="screen-cover" class="screen active">
     <div class="cover-scene">
       <div class="cover">
-        <p class="cover-over">recetarios perdidos del Ecuador</p>
+        <p class="cover-over">Ecuador · año 2000</p>
         <h1>Huecas</h1>
         <p class="cover-sub">saberes y sabores</p>
         <div class="cover-icons" aria-hidden="true">
           <span data-icon="bolon"></span><span data-icon="encebollado"></span><span data-icon="humita"></span>
         </div>
-        <p class="cover-quote">“Algunas recetas no se cocinan; se recuerdan.”</p>
+        <p class="cover-quote">Heredaste una hueca y un recetario incompleto. Cocina, atiende y paga el arriendo — en sucres, claro.</p>
         <div class="cover-actions">
-          <button type="button" id="btn-continue" class="btn-main">Abrir el recetario</button>
-          <button type="button" id="btn-new" class="btn-ghost">Recetario nuevo</button>
+          <button type="button" id="btn-continue" class="btn-main">Abrir la hueca</button>
+          <button type="button" id="btn-new" class="btn-ghost">Hueca nueva</button>
         </div>
         <p class="cover-foot">Guayaquil · Cuenca · Ambato · Quito</p>
       </div>
@@ -42,13 +58,13 @@
   <main id="screen-shelf" class="screen">
     <header class="page-head">
       <h2 class="hand">Los cuadernos de la casa</h2>
-      <p class="page-sub">Cada cuaderno guarda un plato de una ciudad. Recupéralos a tu manera.</p>
+      <p class="page-sub">Cada cuaderno guarda un plato de una ciudad. Lo que recuperes, la clientela lo pedirá.</p>
       <p id="shelf-progress" class="page-progress hand"></p>
     </header>
     <div id="shelf-books" class="shelf-books"></div>
     <div class="shelf-line" aria-hidden="true"></div>
     <p class="page-footnote">Los cuadernos que faltan aparecen en la lona del mercado.</p>
-    <button type="button" id="btn-cover" class="exit-link">Cerrar el recetario</button>
+    <button type="button" id="btn-cover" class="exit-link">Cerrar por hoy</button>
   </main>
 
   <!-- ================= Página de receta ================= -->
@@ -66,18 +82,34 @@
       <p id="receta-intro" class="receta-intro"></p>
       <p id="receta-progress" class="receta-progress hand"></p>
       <div id="receta-steps" class="receta-steps"></div>
-      <div class="receta-actions">
-        <button type="button" id="receta-cook" class="btn-main">Ir a la cocina</button>
-      </div>
     </div>
   </main>
 
   <!-- ================= Cocina ================= -->
   <main id="screen-cocina" class="screen">
     <div class="cocina-wrap">
+      <div class="cocina-top">
+        <div id="cocina-chips" class="cocina-chips"></div>
+        <button type="button" id="quick-lona" class="quick-link">Lona →</button>
+      </div>
+
       <div class="inv-wrap">
-        <p class="inv-label">Tu despensa</p>
-        <div id="inventory" class="inventory"></div>
+        <div class="inv-section">
+          <p class="inv-label">Utensilios</p>
+          <div id="inv-tools" class="inv-row"></div>
+        </div>
+        <div class="inv-section">
+          <p class="inv-label">Ingredientes</p>
+          <div id="inv-ingredients" class="inv-row"></div>
+        </div>
+        <div class="inv-section">
+          <p class="inv-label">Preparaciones</p>
+          <div id="inv-preps" class="inv-row"></div>
+        </div>
+        <div class="inv-section" id="inv-done-wrap">
+          <p class="inv-label">Listo para vender o servir</p>
+          <div id="inv-done" class="inv-row"></div>
+        </div>
       </div>
 
       <div id="cocina-surface" class="cocina-surface">
@@ -87,7 +119,7 @@
       </div>
 
       <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
-      <p class="cocina-warn">Lo que se combina se gasta. Si no era, queda una mezcla rara.</p>
+      <p class="cocina-warn">Lo que se combina se gasta. Los platos terminados se venden o se sirven.</p>
     </div>
   </main>
 
@@ -95,7 +127,10 @@
   <main id="screen-mercado" class="screen">
     <div class="lona-top" aria-hidden="true"></div>
     <div class="mercado-wrap">
-      <h2 class="hand mercado-title">La lona del mercado</h2>
+      <div class="mercado-head">
+        <h2 class="hand mercado-title">La lona del mercado</h2>
+        <button type="button" id="quick-cocina" class="quick-link">← Cocina</button>
+      </div>
       <p class="mercado-sub">“Lleve nomás, que mañana quién sabe.”</p>
 
       <section id="market-books-section">
@@ -105,6 +140,11 @@
 
       <h3 class="market-section hand">Ingredientes frescos</h3>
       <div id="market-ingredients" class="market-grid"></div>
+
+      <section id="market-tools-section">
+        <h3 class="market-section hand">Utensilios y afilador</h3>
+        <div id="market-tools" class="market-grid"></div>
+      </section>
 
       <h3 class="market-section hand">La caserita te compra</h3>
       <div id="market-sell" class="market-grid"></div>
@@ -129,13 +169,36 @@
     <div id="confetti" class="confetti" aria-hidden="true"></div>
     <div class="celebra-card">
       <div class="celebra-burst" aria-hidden="true"><span id="celebra-icon"></span></div>
-      <div class="stamp big" aria-hidden="true">plato<br>recuperado</div>
+      <div id="celebra-stamp" class="stamp big" aria-hidden="true">plato<br>recuperado</div>
       <h3 id="celebra-name" class="celebra-name hand"></h3>
       <p id="celebra-city" class="celebra-city"></p>
       <p id="celebra-line" class="celebra-line"></p>
       <p id="celebra-sell" class="celebra-sell hand"></p>
       <p id="celebra-reward" class="celebra-reward hand"></p>
-      <button type="button" id="celebra-close" class="btn-main">Ver la página completa</button>
+      <button type="button" id="celebra-close" class="btn-main">Ver la página</button>
+    </div>
+  </div>
+
+  <!-- ================= Arriendo ================= -->
+  <div id="modal-arriendo" class="modal" role="dialog" aria-modal="true">
+    <div class="paso-card">
+      <span class="paso-icon" data-icon="arriendo"></span>
+      <h3 class="paso-name hand">El arriendo</h3>
+      <p id="arriendo-text" class="paso-line"></p>
+      <p id="arriendo-note" class="paso-tech"></p>
+      <button type="button" id="arriendo-pay" class="btn-main">Pagar</button>
+    </div>
+  </div>
+
+  <!-- ================= Cierre ================= -->
+  <div id="modal-cierre" class="modal" role="dialog" aria-modal="true">
+    <div class="paso-card">
+      <span class="paso-icon" data-icon="cuaderno"></span>
+      <h3 class="paso-name hand">La hueca cierra…</h3>
+      <p class="paso-line">Sin sucres y sin fama, toca bajar la persiana.
+        Pero las recetas y los utensilios se quedan contigo, por si algún día quieres volver.</p>
+      <p id="cierre-veces" class="paso-tech"></p>
+      <button type="button" id="cierre-reopen" class="btn-main">Volver a abrir la hueca</button>
     </div>
   </div>
 

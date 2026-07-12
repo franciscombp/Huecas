@@ -87,9 +87,35 @@ svg { display: block; width: 100%; height: 100%; }
   border-radius: 999px;
   box-shadow: var(--shadow);
 }
-.coin-icon { width: 1.5rem; height: 1.5rem; }
+.coin-icon { width: 1.4rem; height: 1.4rem; }
+.heart-icon { width: 1.25rem; height: 1.25rem; }
+.hud-sep { width: 1.5px; height: 1.1rem; background: var(--line); }
 .hud.pulse { animation: coin-pulse .5s ease; }
 @keyframes coin-pulse { 40% { transform: scale(1.14); } }
+
+/* ---------- Ticket de cliente ---------- */
+
+.ticket {
+  position: fixed; left: 50%; bottom: calc(var(--tab-h) + .8rem); z-index: 55;
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: .7rem;
+  width: min(430px, 94vw);
+  background: var(--card);
+  border: 2px solid var(--butter);
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(74, 64, 56, .25);
+  padding: .6rem .8rem;
+  transition: transform .35s cubic-bezier(.2, 1.2, .4, 1), opacity .3s ease;
+}
+.ticket.offscreen { transform: translate(-50%, 140%); opacity: 0; pointer-events: none; }
+.ticket-avatar { width: 52px; height: 52px; flex-shrink: 0; }
+.ticket-body { flex: 1; min-width: 0; }
+.ticket-body p { font-size: .88rem; line-height: 1.25; }
+.ticket-body em { color: var(--sello); font-style: normal; font-weight: 600; }
+.ticket-timer { color: var(--ink-soft); font-size: .76rem !important; }
+.ticket-actions { display: flex; flex-direction: column; gap: .35rem; }
+.ticket-actions .btn-main.small { padding: .4rem .9rem; font-size: .82rem; }
+.ticket-actions .btn-main:disabled { opacity: .45; cursor: default; }
 
 /* ---------- Barra de pestañas ---------- */
 
@@ -330,25 +356,61 @@ svg { display: block; width: 100%; height: 100%; }
    COCINA
    ============================================================ */
 
-.cocina-wrap { max-width: 680px; margin: 0 auto; padding: 1rem 1rem 0; }
+.cocina-wrap { max-width: 680px; margin: 0 auto; padding: .8rem 1rem 0; }
+
+.cocina-top { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
+.cocina-chips { display: flex; gap: .4rem; flex-wrap: wrap; flex: 1; }
+.chip-book {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .8rem;
+  padding: .25rem .7rem .25rem .35rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  color: var(--ink-soft);
+}
+.chip-book .chip-icon { width: 1.5rem; height: 1.5rem; }
+.chip-book.current { border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.chip-book.done { opacity: .75; }
+
+.quick-link {
+  font-size: .82rem;
+  color: var(--sello);
+  border: 1.5px dashed var(--sello);
+  border-radius: 999px;
+  padding: .3rem .85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.quick-link:active { transform: scale(.95); }
 
 .inv-wrap {
   background: var(--card);
   border: 1.5px solid var(--line);
   border-radius: 18px;
   box-shadow: var(--shadow);
-  padding: .75rem .9rem .85rem;
+  padding: .65rem .9rem .7rem;
   margin-bottom: 1rem;
-}
-.inv-label { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: .5rem; }
-.inventory {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-  gap: .5rem;
-  max-height: 34vh;
+  max-height: 38vh;
   overflow-y: auto;
 }
-.inv-empty { font-size: 1.15rem; color: var(--ink-soft); padding: .4rem; }
+.inv-section { margin-bottom: .55rem; }
+.inv-section:last-child { margin-bottom: 0; }
+.inv-label { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: .35rem; }
+.inv-row {
+  display: flex; gap: .45rem; flex-wrap: wrap;
+}
+.inv-row .item-card { width: 74px; }
+.inv-none { color: var(--ink-soft); opacity: .6; font-size: 1rem; padding: 0 .2rem; }
+
+.wear {
+  font-size: .55rem; letter-spacing: .12em;
+  color: var(--sage);
+  filter: brightness(.8);
+}
+.wear.low { color: var(--butter); }
+.wear.dull { color: var(--sello); font-family: var(--hand); font-size: .8rem; letter-spacing: 0; }
+.item-card.dull-tool { opacity: .55; border-style: dashed; }
 
 .item-card {
   display: flex; flex-direction: column; align-items: center; gap: .15rem;
@@ -448,7 +510,11 @@ svg { display: block; width: 100%; height: 100%; }
   opacity: .9;
 }
 .mercado-wrap { max-width: 780px; margin: 0 auto; padding: .7rem 1rem 0; text-align: center; }
+.mercado-head { display: flex; align-items: center; justify-content: center; gap: .8rem; position: relative; }
+.mercado-head .quick-link { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 .mercado-title { font-size: 2.1rem; }
+.market-item.service { border-style: dashed; }
+.price.toss-tag { background: rgba(201, 111, 82, .12); border-color: rgba(201, 111, 82, .5); color: var(--sello); }
 .mercado-sub { font-style: italic; color: var(--ink-soft); font-size: .9rem; margin: 0 0 1rem; }
 .market-section { font-size: 1.45rem; color: var(--ink); margin: 1.3rem 0 .6rem; }
 
