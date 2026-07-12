@@ -1,13 +1,12 @@
 /* ============================================================
-   Huecas — saberes y sabores (v2)
-   app.js — Estado, pantallas e interacción.
+   Huecas — saberes y sabores (v3)
+   app.js — Inventario consumible, cocina libre, venta.
    ============================================================ */
 
-const SAVE_KEY = 'huecas_save_v2';
+const SAVE_KEY = 'huecas_save_v3';
 
 /* ---------- Recetario aplanado ---------- */
 
-/* Todas las combinaciones válidas, derivadas de los cuadernos. */
 const ALL_STEPS = [];
 CUADERNO_ORDER.forEach(cid => {
   CUADERNOS[cid].steps.forEach(step => ALL_STEPS.push({ ...step, cuaderno: cid }));
@@ -17,19 +16,32 @@ function findStep(x, y) {
   return ALL_STEPS.find(s => (s.a === x && s.b === y) || (s.a === y && s.b === x));
 }
 
+const isTool = (id) => ITEMS[id].type === 'tool';
+
 /* ---------- Estado ---------- */
 
 let state = null;
 
 function newState() {
-  return {
+  const s = {
     coins: INITIAL_COINS,
     owned: ['bolon'],
-    discovered: [...CUADERNOS.bolon.grants],
-    revealed: [],          /* pasos cuyo ingrediente oculto fue revelado */
+    inv: {},            /* id -> cantidad (ingredientes, preps, platos, mezclas) */
+    tools: [],          /* utensilios permanentes */
+    discovered: [],     /* pasos/resultados ya registrados en los cuadernos */
+    techniques: [],
+    revealed: [],
     dishesDone: [],
-    active: 'bolon',       /* cuaderno activo en la cocina */
   };
+  grantBasket(s, CUADERNOS.bolon.grants);
+  return s;
+}
+
+function grantBasket(s, ids) {
+  ids.forEach(id => {
+    if (isTool(id)) { if (!s.tools.includes(id)) s.tools.push(id); }
+    else s.inv[id] = (s.inv[id] || 0) + 1;
+  });
 }
 
 function save() {
@@ -41,32 +53,32 @@ function load() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!Array.isArray(s.discovered) || !Array.isArray(s.owned)) return null;
+    if (!s.inv || !Array.isArray(s.owned)) return null;
     return { ...newState(), ...s };
   } catch (e) { return null; }
 }
 
-const has = (id) => state.discovered.includes(id);
+const knows = (resultId) => state.discovered.includes(resultId);
 const owns = (cid) => state.owned.includes(cid);
+const count = (id) => isTool(id) ? (state.tools.includes(id) ? 1 : 0) : (state.inv[id] || 0);
 
-/* Pasos obligatorios de un cuaderno. */
+function addItem(id, n = 1) {
+  if (isTool(id)) { if (!state.tools.includes(id)) state.tools.push(id); return; }
+  state.inv[id] = (state.inv[id] || 0) + n;
+  if (state.inv[id] <= 0) delete state.inv[id];
+}
+
 const mainSteps = (cid) => CUADERNOS[cid].steps.filter(s => !s.variant);
+const isComplete = (cid) => mainSteps(cid).every(s => knows(s.result));
+const stepsDone = (cid) => mainSteps(cid).filter(s => knows(s.result)).length;
 
-/* Primer paso obligatorio sin descubrir, o null si el plato está completo. */
-function currentStep(cid) {
-  return mainSteps(cid).find(s => !has(s.result)) || null;
-}
-
-const isComplete = (cid) => currentStep(cid) === null;
-
-function stepsDone(cid) {
-  return mainSteps(cid).filter(s => has(s.result)).length;
-}
-
-/* ¿Le queda a este objeto algún paso pendiente en los cuadernos comprados? */
-function isExhausted(id) {
-  return !ALL_STEPS.some(s =>
-    owns(s.cuaderno) && !has(s.result) && (s.a === id || s.b === id));
+/* Ingredientes que aparecen en la lona: los que usan tus cuadernos. */
+function marketIngredients() {
+  const ids = new Set();
+  ALL_STEPS.filter(s => owns(s.cuaderno)).forEach(s => {
+    [s.a, s.b].forEach(id => { if (ITEMS[id].type === 'ingredient') ids.add(id); });
+  });
+  return [...ids].sort((x, y) => (ITEMS[x].price - ITEMS[y].price) || ITEMS[x].name.localeCompare(ITEMS[y].name));
 }
 
 /* ---------- Utilidades ---------- */
@@ -82,14 +94,13 @@ function el(tag, cls, html) {
 }
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
 function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 
 /* ---------- Navegación ---------- */
 
 const SCREENS = ['cover', 'shelf', 'receta', 'cocina', 'mercado'];
 let currentScreen = 'cover';
-let recetaOpen = null; /* cuaderno mostrado en la pantalla de receta */
+let recetaOpen = null;
 
 function show(screen) {
   currentScreen = screen;
@@ -106,17 +117,11 @@ function show(screen) {
   window.scrollTo(0, 0);
 }
 
-function openReceta(cid) {
-  recetaOpen = cid;
-  if (owns(cid) && !isComplete(cid)) { state.active = cid; save(); }
-  show('receta');
-}
+function openReceta(cid) { recetaOpen = cid; show('receta'); }
 
 /* ---------- Fichas ---------- */
 
-function renderCoins() {
-  $$('.coin-count').forEach(n => { n.textContent = state.coins; });
-}
+function renderCoins() { $$('.coin-count').forEach(n => { n.textContent = state.coins; }); }
 
 function addCoins(n) {
   state.coins += n;
@@ -127,6 +132,28 @@ function addCoins(n) {
     void chip.offsetWidth;
     chip.classList.add('pulse');
   }
+}
+
+/* Anti-atasco: si no puedes comprar, vender ni combinar, la vecina ayuda. */
+function checkRescue() {
+  const cheapest = Math.min(...marketIngredients().map(id => ITEMS[id].price));
+  if (state.coins >= cheapest) return;
+  const sellable = Object.keys(state.inv).some(id => ITEMS[id].sell);
+  if (sellable) return;
+  const combinable = Object.keys(state.inv).filter(id => count(id) > 0);
+  const pool = [...combinable, ...state.tools];
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = i + 1; j < pool.length; j++) {
+      const s = findStep(pool[i], pool[j]);
+      if (s && owns(s.cuaderno)) {
+        if (pool[i] === pool[j] && count(pool[i]) < 2) continue;
+        return; /* aún hay una jugada válida */
+      }
+    }
+  }
+  addCoins(RESCUE_COINS);
+  save();
+  toast(MICROCOPY.rescue, 'seal');
 }
 
 /* ---------- Toasts ---------- */
@@ -142,7 +169,7 @@ function toast(msg, tone = 'ink') {
 }
 
 /* ============================================================
-   ESTANTERÍA — selección de cuadernos, tipo "level select"
+   ESTANTERÍA
    ============================================================ */
 
 function renderShelf() {
@@ -153,21 +180,20 @@ function renderShelf() {
     const owned = owns(cid);
     const done = owned && isComplete(cid);
     const total = mainSteps(cid).length;
-    const doneN = owned ? stepsDone(cid) : 0;
 
     const book = el('button', 'book' + (owned ? '' : ' locked') + (done ? ' done' : ''));
     book.type = 'button';
-    book.style.setProperty('--cover', c.cover);
+    book.style.setProperty('--accent', c.accent);
     book.innerHTML = owned ? `
-      <span class="book-icon">${ITEMS[c.dish].icon}</span>
+      <span class="book-icon">${iconOf(done ? c.dish : 'cuaderno')}</span>
       <span class="book-title">${c.title}</span>
       <span class="book-city">${c.city}</span>
       <span class="book-progress">${done
-        ? '<span class="stamp-mini">completo</span>'
-        : '●'.repeat(doneN) + '○'.repeat(total - doneN)}</span>
+        ? '<span class="stamp-mini">completo ★</span>'
+        : '●'.repeat(stepsDone(cid)) + '○'.repeat(total - stepsDone(cid))}</span>
     ` : `
-      <span class="book-icon dim">📓</span>
-      <span class="book-title">¿ ${c.title} ?</span>
+      <span class="book-icon dim">${iconOf('cuaderno')}</span>
+      <span class="book-title">¿${c.title}?</span>
       <span class="book-city">${c.city}</span>
       <span class="book-progress"><span class="price-tag">${c.cost} fichas en la lona</span></span>
     `;
@@ -178,154 +204,125 @@ function renderShelf() {
     rack.appendChild(book);
   });
 
-  const total = CUADERNO_ORDER.length;
   const done = CUADERNO_ORDER.filter(cid => owns(cid) && isComplete(cid)).length;
-  $('#shelf-progress').textContent = `${done} de ${total} platos recuperados`;
+  $('#shelf-progress').textContent = `${done} de ${CUADERNO_ORDER.length} platos recuperados`;
 }
 
 /* ============================================================
-   PÁGINA DE RECETA — la guía secuencial del cuaderno
+   PÁGINA DE RECETA — acertijos, no instrucciones
    ============================================================ */
 
-function stepIcons(step, revealed) {
-  const a = ITEMS[step.a];
-  const b = ITEMS[step.b];
-  const r = ITEMS[step.result];
-  const known = has(step.result);
-  const showB = known || revealed;
+function pairIcons(step) {
   return `
-    <span class="mini-item" title="${a.name}">${a.icon}<small>${a.name}</small></span>
+    <span class="mini-item">${iconOf(step.a)}<small>${ITEMS[step.a].name}</small></span>
     <span class="op">+</span>
-    <span class="mini-item ${showB ? '' : 'unknown'}" title="${showB ? b.name : '¿?'}">
-      ${showB ? b.icon : '?'}<small>${showB ? b.name : '¿qué será?'}</small></span>
+    <span class="mini-item">${iconOf(step.b)}<small>${ITEMS[step.b].name}</small></span>
     <span class="op">→</span>
-    <span class="mini-item ${known ? '' : 'unknown'}">${known ? r.icon : '¿?'}<small>${known ? r.name : '…'}</small></span>
-  `;
+    <span class="mini-item">${iconOf(step.result)}<small>${ITEMS[step.result].name}</small></span>`;
 }
 
 function renderReceta() {
-  const cid = recetaOpen || state.active;
+  const cid = recetaOpen || state.owned[0];
   recetaOpen = cid;
   const c = CUADERNOS[cid];
   const complete = isComplete(cid);
-  const cur = currentStep(cid);
 
   $('#receta-title').textContent = c.title;
   $('#receta-city').textContent = `${c.city} · ${c.region}`;
-  $('#receta-dish-icon').textContent = complete ? ITEMS[c.dish].icon : '📓';
+  $('#receta-dish-icon').innerHTML = iconOf(complete ? c.dish : 'cuaderno');
   $('#receta-intro').textContent = c.intro;
   $('#receta-stamp').style.display = complete ? '' : 'none';
 
   const list = $('#receta-steps');
   list.innerHTML = '';
-  let reachedCurrent = false;
+  let firstPending = true;
 
   c.steps.forEach((step, i) => {
-    const done = has(step.result);
-    const isCur = cur && step.result === cur.result;
-    if (isCur) reachedCurrent = true;
-    const future = !done && !isCur && !step.variant;
+    const done = knows(step.result);
     const revealed = state.revealed.includes(step.result);
-
     const row = el('div', 'step'
       + (done ? ' done' : '')
-      + (isCur ? ' current' : '')
-      + (future ? ' future' : '')
+      + (!done && firstPending && !step.variant ? ' current' : '')
       + (step.variant ? ' variant' : ''));
+    if (!done && !step.variant && firstPending) firstPending = false;
 
     if (done) {
       row.innerHTML = `
         <span class="step-num">${step.variant ? '✳' : i + 1}</span>
         <div class="step-body">
           <p class="step-line hand">${step.line}</p>
-          <div class="step-icons">${stepIcons(step, true)}</div>
+          <div class="step-icons">${pairIcons(step)}</div>
         </div>
         <span class="step-check">✓</span>`;
-    } else if (isCur || step.variant) {
+    } else {
       row.innerHTML = `
         <span class="step-num">${step.variant ? '✳' : i + 1}</span>
         <div class="step-body">
-          <p class="step-line hand faded">${step.variant ? 'Variante — ' : ''}La página apenas se lee…</p>
-          <div class="step-icons">${stepIcons(step, revealed)}</div>
-          ${step.shopNote && !revealed ? `<p class="step-shopnote">${step.shopNote}</p>` : ''}
-          ${isCur ? `<div class="step-actions">
-            <button type="button" class="btn-chunky small go-cook">Ir a la cocina</button>
-            ${!revealed ? `<button type="button" class="btn-ghost small reveal">Revelar <small>${REVEAL_COST} ficha</small></button>` : ''}
-          </div>` : ''}
+          <p class="step-hint hand">“${step.hint}”</p>
+          ${revealed ? `<div class="step-icons">${pairIcons(step)}</div>` : `
+          <button type="button" class="btn-ghost small reveal">Espiar la página <small>${REVEAL_COST} fichas</small></button>`}
         </div>`;
-      if (isCur) {
-        row.querySelector('.go-cook').addEventListener('click', () => { state.active = cid; save(); show('cocina'); });
-        const rev = row.querySelector('.reveal');
-        if (rev) rev.addEventListener('click', () => revealStep(step));
-      }
-    } else {
-      /* pasos futuros: manchados, ilegibles — la secuencia guía */
-      row.innerHTML = `
-        <span class="step-num">${i + 1}</span>
-        <div class="step-body"><p class="step-line smudge">✕ ✕ ✕ — todavía no se distingue</p></div>`;
+      const rev = row.querySelector('.reveal');
+      if (rev) rev.addEventListener('click', () => {
+        if (state.coins < REVEAL_COST) { toast(MICROCOPY.noCoins, 'soft'); return; }
+        addCoins(-REVEAL_COST);
+        state.revealed.push(step.result);
+        save();
+        renderReceta();
+      });
     }
     list.appendChild(row);
   });
 
-  const n = mainSteps(cid).length;
   $('#receta-progress').textContent = complete
-    ? 'Receta recuperada por completo.'
-    : `Paso ${stepsDone(cid) + 1} de ${n}`;
-}
-
-function revealStep(step) {
-  if (state.coins < REVEAL_COST) { toast(MICROCOPY.noCoins, 'soft'); return; }
-  addCoins(-REVEAL_COST);
-  state.revealed.push(step.result);
-  save();
-  renderReceta();
+    ? 'Receta recuperada. Puedes cocinarla de memoria y venderla en la lona.'
+    : `${stepsDone(cid)} de ${mainSteps(cid).length} pasos recuperados`;
+  $('#receta-cook').style.display = '';
 }
 
 /* ============================================================
-   COCINA — la mesa de trabajo con guía del cuaderno activo
+   COCINA — combinación libre con inventario
    ============================================================ */
 
 const slots = [null, null];
 let combining = false;
 
 function renderCocina() {
-  renderBanner();
+  renderInventory();
   renderSlots();
-  renderTray();
+  renderRiddle();
 }
 
-/* Banner de guía: el paso actual del cuaderno activo. */
-function renderBanner() {
-  /* si el activo ya está completo, pasa al siguiente pendiente */
-  if (isComplete(state.active)) {
-    const next = CUADERNO_ORDER.find(cid => owns(cid) && !isComplete(cid));
-    if (next) state.active = next;
-  }
-  const chips = $('#cocina-chips');
-  chips.innerHTML = '';
-  state.owned.forEach(cid => {
-    const c = CUADERNOS[cid];
-    const b = el('button', 'chip-book' + (cid === state.active ? ' current' : '') + (isComplete(cid) ? ' done' : ''),
-      `${ITEMS[c.dish].icon} <span>${ITEMS[c.dish].name}</span>${isComplete(cid) ? ' ✓' : ''}`);
-    b.type = 'button';
-    b.addEventListener('click', () => { state.active = cid; save(); renderCocina(); });
-    chips.appendChild(b);
-  });
-
-  const cur = currentStep(state.active);
-  const guide = $('#cocina-guide');
-  if (!cur) {
-    guide.innerHTML = state.owned.every(isComplete) && state.owned.length === CUADERNO_ORDER.length
-      ? `<p class="guide-line hand">${MICROCOPY.allDone}</p>`
-      : `<p class="guide-line hand">Este plato ya está completo. Elige otro cuaderno o visita la lona.</p>`;
+/* inventario arriba: lo disponible, con cantidades */
+function renderInventory() {
+  const strip = $('#inventory');
+  strip.innerHTML = '';
+  const order = { ingredient: 0, prep: 1, dish: 2, junk: 3 };
+  const ids = [
+    ...state.tools,
+    ...Object.keys(state.inv).sort((x, y) =>
+      (order[ITEMS[x].type] - order[ITEMS[y].type]) || ITEMS[x].name.localeCompare(ITEMS[y].name)),
+  ];
+  if (!ids.length) {
+    strip.appendChild(el('p', 'inv-empty hand', 'La despensa está vacía. Pasa por la lona.'));
     return;
   }
-  const revealed = state.revealed.includes(cur.result);
-  guide.innerHTML = `
-    <p class="guide-label">El cuaderno dice…</p>
-    <div class="step-icons">${stepIcons(cur, revealed)}</div>
-    ${cur.shopNote && !revealed && !has(cur.b) ? `<p class="step-shopnote">${cur.shopNote}</p>` : ''}
-  `;
+  ids.forEach(id => {
+    const inSlots = slots.filter(s => s === id).length;
+    const avail = isTool(id) ? 1 : count(id) - inSlots;
+    const card = itemCard(id);
+    if (!isTool(id)) card.append(el('span', 'badge', String(count(id))));
+    if (avail <= 0 && !isTool(id)) card.classList.add('spent');
+    card.draggable = avail > 0 || isTool(id);
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', id);
+      e.dataTransfer.effectAllowed = 'copy';
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('click', () => placeInSlot(id));
+    strip.appendChild(card);
+  });
 }
 
 function renderSlots() {
@@ -335,7 +332,7 @@ function renderSlots() {
     zone.classList.toggle('filled', !!slots[i]);
     if (slots[i]) {
       const card = itemCard(slots[i]);
-      card.addEventListener('click', () => { if (!combining) { slots[i] = null; renderSlots(); } });
+      card.tabIndex = -1;
       zone.appendChild(card);
     } else {
       zone.appendChild(el('span', 'slot-hint hand', i === 0 ? 'algo…' : '…con algo'));
@@ -348,114 +345,137 @@ function itemCard(id) {
   const card = el('button', 'item-card type-' + item.type);
   card.type = 'button';
   card.dataset.id = id;
-  card.innerHTML = `<span class="icon">${item.icon}</span><span class="name">${item.name}</span>`;
+  card.innerHTML = `<span class="icon">${iconOf(id)}</span><span class="name">${item.name}</span>`;
   card.setAttribute('aria-label', `${item.name}, ${TYPES[item.type].label}`);
   return card;
 }
 
-function renderTray() {
-  const tray = $('#tray');
-  tray.innerHTML = '';
-  const order = { ingredient: 0, tool: 1, prep: 2 };
-  state.discovered
-    .filter(id => ITEMS[id].type in order)
-    .sort((x, y) => (order[ITEMS[x].type] - order[ITEMS[y].type]) || ITEMS[x].name.localeCompare(ITEMS[y].name))
-    .forEach(id => {
-      const card = itemCard(id);
-      if (isExhausted(id)) {
-        card.classList.add('exhausted');
-        card.title = 'Ya cumplió sus pasos, por ahora';
-      }
-      card.draggable = true;
-      card.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', id);
-        e.dataTransfer.effectAllowed = 'copy';
-        card.classList.add('dragging');
-      });
-      card.addEventListener('dragend', () => card.classList.remove('dragging'));
-      card.addEventListener('click', () => placeInSlot(id));
-      tray.appendChild(card);
-    });
+/* nota sutil: el acertijo pendiente del cuaderno más avanzado */
+function renderRiddle() {
+  const note = $('#cocina-riddle');
+  const pending = state.owned
+    .map(cid => CUADERNOS[cid].steps.find(s => !knows(s.result) && !s.variant))
+    .filter(Boolean);
+  if (!pending.length) {
+    note.innerHTML = state.owned.length === CUADERNO_ORDER.length
+      ? `<span class="hand">${MICROCOPY.allDone}</span>`
+      : '<span class="hand">Todo recuperado por aquí. La lona tiene más cuadernos.</span>';
+    return;
+  }
+  const step = pending[0];
+  note.innerHTML = `<span class="riddle-label">el cuaderno murmura…</span> <span class="hand">“${step.hint}”</span>`;
 }
 
 function placeInSlot(id, index = null) {
   if (combining) return;
+  const inSlots = slots.filter(s => s === id).length;
+  if (!isTool(id) && count(id) - inSlots <= 0) { toast('No te queda más. La lona tiene.', 'soft'); return; }
+  if (isTool(id) && slots.includes(id)) { toast('Ese ya está en la mesa.', 'soft'); return; }
   let i = index;
   if (i === null) i = slots[0] === null ? 0 : slots[1] === null ? 1 : null;
-  if (i === null) { toast('La mesa está llena. Toca un objeto para retirarlo.'); return; }
+  if (i === null) { toast('La mesa está llena. Toca algo para retirarlo.'); return; }
   slots[i] = id;
-  renderSlots();
-  if (slots[0] && slots[1]) setTimeout(attemptCombine, 380);
+  renderCocina();
+  if (slots[0] && slots[1]) setTimeout(attemptCombine, 420);
 }
 
 function attemptCombine() {
   if (!slots[0] || !slots[1] || combining) return;
   combining = true;
-  const step = findStep(slots[0], slots[1]);
+  const [x, y] = slots;
+  const step = findStep(x, y);
+  const valid = step && owns(step.cuaderno);
   const surface = $('#cocina-surface');
 
-  const clear = () => { slots[0] = slots[1] = null; combining = false; renderCocina(); };
+  const finish = () => {
+    slots[0] = slots[1] = null;
+    combining = false;
+    renderCocina();
+    checkRescue();
+    save();
+  };
 
-  if (!step) {
+  /* dos utensilios: nada que hacer, nada que perder */
+  if (isTool(x) && isTool(y)) {
     surface.classList.add('shake');
-    toast(pick(MICROCOPY.fail), 'soft');
-    buzz(60);
-    setTimeout(() => { surface.classList.remove('shake'); combining = false; }, 450);
-    return;
-  }
-  if (has(step.result)) {
-    toast(MICROCOPY.known, 'soft');
-    clear();
+    toast(MICROCOPY.toolsClank, 'soft');
+    buzz(40);
+    setTimeout(() => { surface.classList.remove('shake'); slots[0] = slots[1] = null; combining = false; renderCocina(); }, 450);
     return;
   }
 
+  if (!valid) {
+    /* se arruina: lo que no es utensilio se pierde en una mezcla rara */
+    [x, y].forEach(id => { if (!isTool(id)) addItem(id, -1); });
+    addItem('mezcla_rara', 1);
+    surface.classList.add('shake');
+    toast(pick(MICROCOPY.junk), 'soft');
+    buzz(80);
+    setTimeout(() => { surface.classList.remove('shake'); finish(); }, 500);
+    return;
+  }
+
+  /* combinación correcta: consume y produce */
+  [x, y].forEach(id => { if (!isTool(id)) addItem(id, -1); });
+  addItem(step.result, 1);
   surface.classList.add('success');
   buzz([30, 40, 60]);
   setTimeout(() => {
     surface.classList.remove('success');
-    slots[0] = slots[1] = null;
-    combining = false;
-    discoverStep(step);
+    if (!knows(step.result)) {
+      slots[0] = slots[1] = null;
+      combining = false;
+      discoverStep(step);
+      checkRescue();
+    } else {
+      floaty(`+1 ${ITEMS[step.result].name}`);
+      toast(MICROCOPY.crafted, 'seal');
+      finish();
+    }
   }, 620);
 }
 
-/* ---------- Descubrimiento de un paso ---------- */
+/* textito flotante al re-cocinar */
+function floaty(text) {
+  const f = el('span', 'floaty hand', text);
+  $('#cocina-surface').appendChild(f);
+  setTimeout(() => f.remove(), 1100);
+}
+
+/* ---------- Descubrimiento ---------- */
 
 function discoverStep(step) {
-  const item = ITEMS[step.result];
   state.discovered.push(step.result);
+  const item = ITEMS[step.result];
 
   let reward = item.type === 'dish'
     ? (item.meta ? REWARDS.dishMeta : item.variant ? REWARDS.dishVariant : REWARDS.dish)
     : REWARDS.step;
 
   let newTech = null;
-  if (step.tech && !has(step.tech)) {
-    state.discovered.push(step.tech);
+  if (step.tech && !state.techniques.includes(step.tech)) {
+    state.techniques.push(step.tech);
     newTech = step.tech;
     reward += REWARDS.technique;
   }
-
   addCoins(reward);
+  save();
 
   if (item.type === 'dish') {
     if (!state.dishesDone.includes(step.result)) state.dishesDone.push(step.result);
     save();
     showCelebration(step, reward);
   } else {
-    save();
     showPaso(step, reward, newTech);
   }
 }
 
-/* Nota rápida de paso registrado. */
 function showPaso(step, reward, newTech) {
-  const item = ITEMS[step.result];
-  $('#paso-icon').textContent = item.icon;
-  $('#paso-name').textContent = item.name;
+  $('#paso-icon').innerHTML = iconOf(step.result);
+  $('#paso-name').textContent = ITEMS[step.result].name;
   $('#paso-line').textContent = step.line;
   $('#paso-tech').innerHTML = newTech
-    ? `Saber registrado: <em>${ITEMS[newTech].icon} ${ITEMS[newTech].name}</em>` : '';
+    ? `Saber registrado: <span class="tech-chip">${iconOf(newTech)}</span> <em>${ITEMS[newTech].name}</em>` : '';
   $('#paso-reward').textContent = `+${reward} fichas`;
   $('#modal-paso').classList.add('open');
 }
@@ -466,24 +486,25 @@ function closePaso() {
   if (currentScreen === 'receta') renderReceta();
 }
 
-/* Celebración de plato completo. */
 let celebratedCuaderno = null;
 function showCelebration(step, reward) {
   celebratedCuaderno = step.cuaderno;
   const c = CUADERNOS[step.cuaderno];
   const item = ITEMS[step.result];
-  $('#celebra-icon').textContent = item.icon;
+  $('#celebra-icon').innerHTML = iconOf(step.result);
   $('#celebra-name').textContent = item.name;
   $('#celebra-city').textContent = `${c.city} · ${c.region}`;
   $('#celebra-line').textContent = step.line;
   $('#celebra-reward').textContent = `+${reward} fichas`;
+  $('#celebra-sell').textContent = item.sell
+    ? `La caserita lo compra a ${item.sell} fichas. Cocínalo de memoria y vende.` : '';
   const confetti = $('#confetti');
   confetti.innerHTML = '';
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 24; i++) {
     const p = el('i');
     p.style.left = Math.random() * 100 + '%';
     p.style.animationDelay = Math.random() * 0.5 + 's';
-    p.style.setProperty('--tone', ['#7d9b76', '#c17a58', '#4d5f80', '#e0b45c'][i % 4]);
+    p.style.setProperty('--tone', ['#9dbd8a', '#d9a0b0', '#93a7c4', '#e0b45c'][i % 4]);
     confetti.appendChild(p);
   }
   $('#modal-celebra').classList.add('open');
@@ -491,63 +512,81 @@ function showCelebration(step, reward) {
 
 function closeCelebration() {
   $('#modal-celebra').classList.remove('open');
-  /* al cerrar, muestra la página de la receta ya completa */
-  openReceta(celebratedCuaderno || state.active);
+  openReceta(celebratedCuaderno || state.owned[0]);
 }
 
 /* ============================================================
-   MERCADO
+   MERCADO — comprar cuadernos e ingredientes, vender platos
    ============================================================ */
 
 function renderMercado() {
   /* cuadernos */
   const grid = $('#market-books');
+  const pendientes = CUADERNO_ORDER.filter(cid => !owns(cid));
+  $('#market-books-section').style.display = pendientes.length ? '' : 'none';
   grid.innerHTML = '';
-  CUADERNO_ORDER.filter(cid => CUADERNOS[cid].cost > 0).forEach(cid => {
+  pendientes.forEach(cid => {
     const c = CUADERNOS[cid];
-    const owned = owns(cid);
-    const card = el('div', 'market-book' + (owned ? ' owned' : ''));
-    card.style.setProperty('--cover', c.cover);
+    const card = el('div', 'market-book');
+    card.style.setProperty('--accent', c.accent);
     card.innerHTML = `
-      <span class="mb-icon">${owned ? ITEMS[c.dish].icon : '📓'}</span>
+      <span class="mb-icon">${iconOf('cuaderno')}</span>
       <span class="mb-title">${c.title}</span>
       <span class="mb-city">${c.city}</span>
       <span class="mb-blurb hand">“${c.blurb}”</span>
-      ${owned
-        ? '<span class="price sold">ya es tuyo</span>'
-        : `<button type="button" class="price buy-btn">${c.cost} fichas</button>`}
-    `;
-    if (!owned) card.querySelector('.buy-btn').addEventListener('click', () => buyCuaderno(cid, card));
+      <button type="button" class="price buy-btn">${c.cost} fichas</button>`;
+    card.querySelector('.buy-btn').addEventListener('click', () => buyCuaderno(cid, card));
     grid.appendChild(card);
   });
 
-  /* despensa */
-  const extras = $('#market-extras');
-  extras.innerHTML = '';
-  SHOP_EXTRAS.forEach(({ id, cost, blurb }) => {
+  /* ingredientes */
+  const ing = $('#market-ingredients');
+  ing.innerHTML = '';
+  marketIngredients().forEach(id => {
     const item = ITEMS[id];
-    const owned = has(id);
-    const card = el('div', 'market-item' + (owned ? ' owned' : ''));
+    const card = el('button', 'market-item');
+    card.type = 'button';
     card.innerHTML = `
-      <span class="icon">${item.icon}</span>
-      <span class="name">${item.name}</span>
-      <span class="blurb hand">“${blurb}”</span>
-      ${owned
-        ? '<span class="price sold">ya es tuyo</span>'
-        : `<button type="button" class="price buy-btn">${cost} ${cost === 1 ? 'ficha' : 'fichas'}</button>`}
-    `;
-    if (!owned) {
-      card.querySelector('.buy-btn').addEventListener('click', () => {
-        if (state.coins < cost) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
-        addCoins(-cost);
-        state.discovered.push(id);
+      <span class="icon">${iconOf(id)}</span>
+      <span class="name">${item.name}${count(id) ? ` <small class="have">×${count(id)}</small>` : ''}</span>
+      <span class="price tag">${item.price} ${item.price === 1 ? 'ficha' : 'fichas'}</span>`;
+    card.addEventListener('click', () => {
+      if (state.coins < item.price) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
+      addCoins(-item.price);
+      addItem(id, 1);
+      save();
+      buzz(25);
+      renderMercado();
+    });
+    ing.appendChild(card);
+  });
+
+  /* venta */
+  const sell = $('#market-sell');
+  sell.innerHTML = '';
+  const sellables = Object.keys(state.inv).filter(id => ITEMS[id].sell && count(id) > 0);
+  if (!sellables.length) {
+    sell.appendChild(el('p', 'sell-empty hand', 'Cocina algo rico y la caserita te lo compra.'));
+  } else {
+    sellables.forEach(id => {
+      const item = ITEMS[id];
+      const card = el('button', 'market-item sellable');
+      card.type = 'button';
+      card.innerHTML = `
+        <span class="icon">${iconOf(id)}</span>
+        <span class="name">${item.name} <small class="have">×${count(id)}</small></span>
+        <span class="price tag sell-tag">vender +${item.sell}</span>`;
+      card.addEventListener('click', () => {
+        addItem(id, -1);
+        addCoins(item.sell);
         save();
-        toast(MICROCOPY.bought, 'seal');
+        buzz(25);
+        toast(MICROCOPY.sold, 'seal');
         renderMercado();
       });
-    }
-    extras.appendChild(card);
-  });
+      sell.appendChild(card);
+    });
+  }
 }
 
 function buyCuaderno(cid, card) {
@@ -555,10 +594,9 @@ function buyCuaderno(cid, card) {
   if (state.coins < c.cost) { toast(MICROCOPY.noCoins, 'soft'); shakeCard(card); return; }
   addCoins(-c.cost);
   state.owned.push(cid);
-  c.grants.forEach(id => { if (!has(id)) state.discovered.push(id); });
-  state.active = cid;
+  grantBasket(state, c.grants);
   save();
-  toast('La caserita te fía lo básico. Buen provecho.', 'seal');
+  toast('La caserita te fía la primera canasta.', 'seal');
   openReceta(cid);
 }
 
@@ -586,6 +624,7 @@ function bindEvents() {
   $$('#tabbar .tab-btn').forEach(b =>
     b.addEventListener('click', () => show(b.dataset.screen)));
   $('#receta-back').addEventListener('click', () => show('shelf'));
+  $('#receta-cook').addEventListener('click', () => show('cocina'));
   $('#btn-cover').addEventListener('click', () => show('cover'));
 
   [0, 1].forEach(i => {
@@ -597,6 +636,9 @@ function bindEvents() {
       zone.classList.remove('over');
       const id = e.dataTransfer.getData('text/plain');
       if (id && ITEMS[id]) placeInSlot(id, i);
+    });
+    zone.addEventListener('click', () => {
+      if (!combining && slots[i]) { slots[i] = null; renderCocina(); }
     });
   });
 
@@ -612,6 +654,7 @@ function init() {
   const saved = load();
   state = saved || newState();
   $('#btn-continue').textContent = saved ? 'Continuar' : 'Abrir el recetario';
+  $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
   renderCoins();
   show('cover');
