@@ -396,7 +396,7 @@ function resolveRent() {
 /* ---------- Cierre / reapertura ---------- */
 
 function closeHueca() {
-  queue = [];
+  /* la clientela sigue en la fila; no se borra al cerrar */
   state.timesClosed += 1;
   $('#cierre-veces').textContent = state.timesClosed > 1 ? `Ya van ${state.timesClosed} veces. El barrio te sigue queriendo.` : '';
   $('#modal-cierre').classList.add('open');
@@ -409,7 +409,10 @@ function reopenHueca() {
   state.sinceRent = 0; state.rentCycle = 0;
   state.consecutiveMisses = 0; state.fiado = false;
   state.tools.forEach(t => { if (ITEMS[t].wear) state.toolWear[t] = ITEMS[t].wear; });
-  queue = [];
+  /* la fila esperó la reapertura: les renovamos la paciencia */
+  const tier = pressureTier();
+  queue.forEach(c => { c.deadline = Date.now() + tier.patience * 1000; c.total = tier.patience; });
+  lastSpawn = Date.now();
   save(); renderHud();
   $('#modal-cierre').classList.remove('open');
   toast('La hueca vuelve a abrir. Las recetas nunca se fueron.', 'seal');
@@ -560,20 +563,32 @@ function renderQueue() {
   const row = $('#queue');
   row.innerHTML = '';
   if (state.mode === 'tranquilo') { row.appendChild(el('span', 'queue-empty hand', 'Explora recetas con calma 🌙')); return; }
-  if (!queue.length) { row.appendChild(el('span', 'queue-empty hand', realDishes().length ? 'Nadie espera… por ahora' : 'Aún no llega nadie')); return; }
-  queue.forEach(c => {
+  /* asientos fijos: la fila no se colapsa aunque esté vacía */
+  for (let i = 0; i < HUECA.queueMax; i++) {
+    const c = queue[i];
+    if (!c) {
+      const seat = el('div', 'client seat');
+      seat.innerHTML = `<span class="seat-mark">${i === 0 && !realDishes().length ? '' : '·'}</span>`;
+      row.appendChild(seat);
+      continue;
+    }
     const have = count(c.dish) >= 1;
+    const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
     const card = el('div', 'client' + (have ? ' ready' : ''));
     card.dataset.id = c.id;
-    const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
     card.innerHTML = `
       <span class="cl-avatar">${iconOf(c.icon)}</span>
       <span class="cl-bubble">${iconOf(c.dish)}</span>
+      <span class="cl-name">${c.name}</span>
       <div class="cl-bar-wrap"><span class="cl-bar" style="transform:scaleX(${frac})"></span></div>
       <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;
     card.querySelector('.cl-serve').addEventListener('click', () => serveCustomer(c.id));
     row.appendChild(card);
-  });
+  }
+  if (!queue.length && !realDishes().length) {
+    row.innerHTML = '';
+    row.appendChild(el('span', 'queue-empty hand', 'Descubre tu primer plato y llegará la clientela'));
+  }
 }
 
 /* --- selector de cuaderno activo --- */
@@ -642,21 +657,61 @@ function actionFor(x, y) {
   return { kind: 'weird', result: m.result, good: false, full: { title: m.title, text: m.text } };
 }
 
+/* habilidades ya aprendidas donde el 2º insumo es un utensilio tuyo:
+   permite disparar la acción con solo el ingrediente en la mesa */
+function learnedToolSteps(item) {
+  if (isTool(item) || isDone(item)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const s of ALL_STEPS) {
+    if (!owns(s.cuaderno) || !knows(s.result) || seen.has(s.result)) continue;
+    let tool = null;
+    if (s.a === item && isTool(s.b)) tool = s.b;
+    else if (s.b === item && isTool(s.a)) tool = s.a;
+    else continue;
+    if (state.tools.includes(tool) && !isDull(tool)) { out.push({ step: s, tool }); seen.add(s.result); }
+  }
+  return out;
+}
+
+function actionBtn(cls, label, icon, onClick) {
+  const btn = el('button', 'cook-btn' + cls, `<span class="cook-ic">${iconOf(icon)}</span> ${label}`);
+  btn.type = 'button';
+  btn.addEventListener('click', onClick);
+  return btn;
+}
+
 function renderMesaAction() {
   const zone = $('#mesa-action');
   zone.innerHTML = '';
   if (combining) return;
   const [x, y] = slots;
+
+  /* un solo objeto en la mesa */
+  if (x && !y) {
+    /* plato terminado: servir a quien lo pida o guardarlo (que no estorbe) */
+    if (isDish(x)) {
+      const wanted = queue.find(c => c.dish === x);
+      if (wanted) zone.appendChild(actionBtn(' known', 'Servir', 'corazon', () => serveCustomer(wanted.id)));
+      zone.appendChild(actionBtn(' guardar', 'Guardar', 'usar', clearMesa));
+      return;
+    }
+    /* habilidad aprendida: acción con solo el ingrediente (el utensilio se usa solo) */
+    const autos = learnedToolSteps(x);
+    autos.forEach(({ step, tool }) => {
+      const v = verbOf(step);
+      zone.appendChild(actionBtn(' known', v.label, v.icon, () => performCook(x, tool)));
+    });
+    return;
+  }
+
   if (!x || !y) return;
   const act = actionFor(x, y);
   if (!act) { zone.innerHTML = `<span class="mesa-nope">${MICROCOPY.toolsClank}</span>`; return; }
   /* verbo revelado solo si ya descubriste ese paso; si no, "Usar" (sin spoiler) */
   const known = act.good && knows(act.result);
   const v = known ? verbOf(act.source) : { label: 'Usar', icon: 'usar' };
-  const btn = el('button', 'cook-btn' + (known ? ' known' : ''), `<span class="cook-ic">${iconOf(v.icon)}</span> ${v.label}`);
-  btn.type = 'button';
-  btn.addEventListener('click', cook);
-  zone.appendChild(btn);
+  zone.appendChild(actionBtn(known ? ' known' : '', v.label, v.icon, () => performCook(x, y)));
 }
 
 function renderRiddle() {
@@ -749,9 +804,10 @@ function placeInSlot(id, index = null) {
 }
 function clearMesa() { if (combining) return; slots[0] = slots[1] = null; renderCocina(); }
 
-function cook() {
-  if (!slots[0] || !slots[1] || combining) return;
-  const [x, y] = slots;
+/* x = base que queda en la mesa; y = 2º insumo (puede venir de un botón
+   de habilidad aprendida, sin estar colocado en una casilla). */
+function performCook(x, y) {
+  if (combining || !x || !y) return;
   const act = actionFor(x, y);
   if (!act) return;
   combining = true;

@@ -570,3 +570,11 @@ svg { display: block; width: 100%; height: 100%; }
 .mishap-actions { display: flex; gap: .6rem; margin-top: .6rem; }
 .mishap-actions .btn-main { flex: 1; background: var(--sello); box-shadow: 0 3px 0 #a3543b, var(--shadow-sm); }
 .mishap-actions .btn-ghost { flex: 1; }
+
+/* --- v7.2: fila con asientos estables, nombre, botón Guardar --- */
+.client.seat { background: transparent; border: 1.5px dashed var(--line); box-shadow: none; align-items: center; justify-content: center; animation: none; }
+.seat-mark { color: var(--ink-soft); opacity: .4; font-size: 1.4rem; }
+.cl-name { font-size: .58rem; color: var(--ink-soft); line-height: 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cook-btn.guardar { background: var(--paper-2); color: var(--ink-soft); box-shadow: 0 3px 0 var(--line), var(--shadow-sm); }
+.cook-btn.guardar:active { box-shadow: 0 0 0 var(--line), var(--shadow-sm); }
+.mesa-action { flex-wrap: wrap; gap: .5rem; }
