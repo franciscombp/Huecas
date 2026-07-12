@@ -174,6 +174,19 @@ ICONS.tabla = _svg(`
   <circle cx="32" cy="17" r="3.2" fill="#f6eed9"/>
   <path d="M22 28 H42 M22 36 H42 M22 44 H38" stroke="#b08a5f" stroke-width="2" stroke-linecap="round"/>`);
 
+ICONS.cuchillo = _svg(`
+  <rect x="27" y="34" width="10" height="22" rx="4" fill="#8a6240"/>
+  <path d="M22 34 Q18 20 26 10 Q30 6 34 8 Q42 8 42 20 L42 34 Z" fill="#c9cdd4"/>
+  <path d="M42 34 L42 18 Q46 26 44 34 Z" fill="#aab0ba"/>`);
+
+ICONS.molino = _svg(`
+  <rect x="18" y="26" width="28" height="24" rx="6" fill="#8d867a"/>
+  <path d="M22 26 Q22 14 32 14 Q42 14 42 26 Z" fill="#aab0ba"/>
+  <circle cx="49" cy="20" r="5.5" fill="none" stroke="#6b655b" stroke-width="3"/>
+  <rect x="47" y="6" width="4" height="10" rx="2" fill="#8a6240" transform="rotate(18 49 11)"/>
+  <rect x="24" y="50" width="16" height="5" rx="2.5" fill="#6b655b"/>
+  ${face(32, 38, .62)}`);
+
 /* ============ Técnicas (glifos sobre pastilla pastel) ============ */
 
 function glyph(bg, inner) {
@@ -198,9 +211,24 @@ ICONS.dorar = glyph('#f6dfc0',
   `<path d="M32 14 Q40 24 38 32 Q44 30 44 38 Q44 48 32 48 Q20 48 20 38 Q20 28 27 24 Q25 19 32 14 Z" fill="#e0a45c" stroke="${INK}" stroke-width="2"/>`);
 ICONS.mezclar = glyph('#e4ddf0',
   `<path d="M32 18 Q45 18 45 30 Q45 41 34 41 Q25 41 25 33 Q25 26 32 26 Q37 26 37 31" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>`);
+ICONS.pelar = glyph('#e9e3d2',
+  `<path d="M26 14 Q20 30 26 46" fill="none" stroke="${INK}" stroke-width="2.8" stroke-linecap="round"/>
+   <path d="M36 14 Q30 30 36 46 Q42 40 40 30 Q42 20 36 14 Z" fill="${INK}" opacity=".8"/>`);
+ICONS.moler = glyph('#e0d5c2',
+  `<circle cx="32" cy="32" r="12" fill="none" stroke="${INK}" stroke-width="2.8"/>
+   <circle cx="32" cy="32" r="3" fill="${INK}"/>
+   <rect x="41" y="14" width="4" height="12" rx="2" fill="${INK}" transform="rotate(32 43 20)"/>`);
 
 /* ============ Preparaciones ============ */
 
+ICONS.verde_pelado = _svg(`
+  <rect x="26" y="10" width="12" height="40" rx="6" fill="#efe3b8"/>
+  <path d="M18 44 Q12 34 18 22 Q23 26 23 36 Z" fill="#9dbd8a"/>
+  <path d="M46 44 Q52 34 46 22 Q41 26 41 36 Z" fill="#9dbd8a"/>
+  ${face(32, 32, .72)}`);
+ICONS.pescado_limpio = _svg(`
+  <path d="M14 32 Q14 22 26 20 L46 20 Q52 26 52 32 Q52 38 46 44 L26 44 Q14 42 14 32 Z" fill="#f0dfd2"/>
+  <path d="M24 22 Q28 32 24 42 M33 21 Q37 32 33 43 M42 21 Q46 32 42 43" stroke="#dfc4b0" stroke-width="2.4" fill="none" stroke-linecap="round"/>`);
 ICONS.verde_cocido    = _svg(bowl('#b9c78a', { steamOn: true }));
 ICONS.verde_majado    = _svg(bowl('#a8b877', { extra: `<ellipse cx="32" cy="27" rx="12" ry="6" fill="#b9c78a"/>` }));
 ICONS.masa_bolon      = _svg(ball('#b9c78a', `<circle cx="24" cy="26" r="1.8" fill="#a3b26a"/><circle cx="41" cy="30" r="1.8" fill="#a3b26a"/><circle cx="36" cy="45" r="1.8" fill="#a3b26a"/>`));
@@ -277,6 +305,68 @@ ICONS.mezcla_rara = _svg(`
   <circle cx="44" cy="42" r="2.4" fill="#b3bfa6"/>
   <circle cx="40" cy="18" r="2" fill="#b3bfa6"/>
   ${face(32, 34, .9, 'dizzy')}`);
+
+ICONS.bolon_doble_queso = _svg(`${steam(32, 12)}
+  <circle cx="32" cy="34" r="19" fill="#c9b06a"/>
+  <path d="M20 42 Q24 50 32 48 Q28 44 28 40 Z" fill="#f6e2b0"/>
+  <path d="M44 40 Q44 48 36 49 Q38 44 40 40 Z" fill="#f6e2b0"/>
+  ${face(32, 32, 1)}`);
+
+ICONS.humita_con_queso = _svg(`
+  <path d="M12 36 Q6 28 10 16 Q20 18 23 27 Z" fill="#9dbd8a"/>
+  <path d="M52 36 Q58 28 54 16 Q44 18 41 27 Z" fill="#9dbd8a"/>
+  <path d="M15 34 Q15 22 32 22 Q49 22 49 34 Q49 47 32 47 Q15 47 15 34 Z" fill="#f2d06b"/>
+  <path d="M24 24 Q28 32 24 38 M36 23 Q40 31 38 39" stroke="#fdfbf4" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+  ${face(32, 34, .74)}`);
+
+ICONS.verde_amargo = _svg(`
+  <rect x="24" y="12" width="16" height="38" rx="8" fill="#6e7a58"/>
+  <path d="M27 18 Q25 32 29 44" stroke="#59644a" stroke-width="3" fill="none" stroke-linecap="round"/>
+  ${face(32, 32, .78, 'dizzy')}`);
+
+ICONS.leche_cortada = _svg(`
+  <rect x="24" y="10" width="16" height="9" rx="3" fill="#8d867a"/>
+  <path d="M23 19 H41 L44 28 V48 Q44 53 39 53 H25 Q20 53 20 48 V28 Z" fill="#f2ecdc" stroke="#d8ccb0" stroke-width="2"/>
+  <circle cx="28" cy="40" r="2.6" fill="#d8ccb0"/>
+  <circle cx="36" cy="45" r="2.2" fill="#d8ccb0"/>
+  ${face(32, 33, .6, 'dizzy')}`);
+
+ICONS.hoja_chamuscada = _svg(`
+  <path d="M32 10 Q50 20 48 36 Q46 50 32 54 Q18 50 16 36 Q14 20 32 10 Z" fill="#7a6a55"/>
+  <path d="M40 14 Q52 24 48 40 Q42 34 40 26 Z" fill="#4a4038" opacity=".55"/>
+  <path d="M32 16 V50" stroke="#5c5040" stroke-width="2" stroke-linecap="round"/>
+  ${steam(40, 12)}`);
+
+/* clientes de la hueca */
+function head(skin, hair, extra = '') {
+  return _svg(`
+    <circle cx="32" cy="34" r="19" fill="${skin}"/>
+    ${hair}
+    ${face(32, 37, .95)}
+    ${extra}`);
+}
+ICONS.cliente_rosa = head('#e8b98f',
+  `<path d="M13 34 Q10 12 32 13 Q54 12 51 34 Q51 22 32 22 Q13 22 13 34 Z" fill="#8d867a"/>
+   <circle cx="14" cy="36" r="4" fill="#8d867a"/><circle cx="50" cy="36" r="4" fill="#8d867a"/>`);
+ICONS.cliente_jacinto = head('#c98a5b',
+  `<path d="M15 30 Q16 15 32 15 Q48 15 49 30 L49 26 Q46 20 32 20 Q18 20 15 26 Z" fill="#6b655b"/>
+   <rect x="24" y="10" width="16" height="7" rx="3" fill="#6b655b"/>
+   <path d="M24 47 Q32 51 40 47" stroke="#6b655b" stroke-width="3" fill="none" stroke-linecap="round"/>`);
+ICONS.cliente_wawa = head('#e8b98f',
+  `<path d="M22 16 Q32 8 42 16 Q38 12 32 12 Q26 12 22 16 Z" fill="#4a4038"/>
+   <path d="M26 15 Q32 10 38 15" stroke="#4a4038" stroke-width="4" fill="none" stroke-linecap="round"/>
+   <circle cx="20" cy="18" r="3.4" fill="#d9a0b0"/>`);
+ICONS.cliente_chofer = head('#b98a66',
+  `<path d="M14 28 Q14 14 32 14 Q50 14 50 28 L50 24 H14 Z" fill="#4d5f80"/>
+   <path d="M12 27 H52 L50 31 H14 Z" fill="#3d4c66"/>`);
+
+ICONS.arriendo = _svg(`
+  <rect x="16" y="18" width="32" height="34" rx="4" fill="#f6eed9" stroke="#d8ccb0" stroke-width="2"/>
+  <path d="M22 28 H42 M22 35 H42 M22 42 H34" stroke="#8a7f70" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="42" cy="44" r="7" fill="#c96f52" opacity=".85"/>`);
+
+ICONS.corazon = _svg(`
+  <path d="M32 50 Q12 38 12 25 Q12 14 22 14 Q29 14 32 21 Q35 14 42 14 Q52 14 52 25 Q52 38 32 50 Z" fill="#d9a0b0"/>`);
 
 ICONS.ficha = _svg(`
   <circle cx="32" cy="32" r="17" fill="#e6c37a"/>

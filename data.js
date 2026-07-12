@@ -1,9 +1,13 @@
 /* ============================================================
-   Huecas — saberes y sabores (v3)
-   data.js — Todo el contenido del juego.
-   Economía de inventario: los ingredientes se compran y se
-   consumen al cocinar; los platos se venden. Los cuadernos
-   registran lo descubierto y dan acertijos, no instrucciones.
+   Huecas — saberes y sabores (v4)
+   data.js — Todo el contenido y las reglas del juego.
+
+   CÓMO CRECE EL JUEGO (sin tocar app.js):
+   - Un objeto nuevo → entrada en ITEMS (+ icono en icons.js).
+   - Un plato nuevo  → cuaderno en CUADERNOS + CUADERNO_ORDER.
+   - Una condición nueva (invento, fallo explícito, etc.)
+     → una fila en RULES. El motor resuelve en este orden:
+     paso canon → regla → bloqueo de terminados → mezcla rara.
    ============================================================ */
 
 const TYPES = {
@@ -16,58 +20,67 @@ const TYPES = {
 };
 
 /* ---------- Nodos ----------
-   price: costo en la lona (solo ingredientes).
-   sell: lo que paga la caserita (platos y mezclas raras). */
+   price: costo en la lona (ingredientes y utensilios comprables).
+   sell: lo que pagan por él (platos y mezclas; 0 = ni los chanchitos).
+   wear/sharpenCost: desgaste de utensilios (cuchillo).
+   creative: plato inventado, no pertenece a ningún cuaderno. */
 const ITEMS = {
   /* Ingredientes */
   verde:         { name: 'Verde',         type: 'ingredient', price: 1,
                    note: 'Plátano macho, aún firme. En la costa, el día empieza aquí.' },
   queso:         { name: 'Queso',         type: 'ingredient', price: 1,
-                   note: 'Fresco, de mesa o de hoja. Se asoma en casi todas las páginas.' },
+                   note: 'Fresco, de mesa o de hoja.' },
   chicharron:    { name: 'Chicharrón',    type: 'ingredient', price: 2,
                    note: 'Crocante de cerdo. Un lujo de todos los días.' },
   pescado:       { name: 'Pescado',       type: 'ingredient', price: 2,
-                   note: 'Albacora, picudo, lo que traiga la marea de madrugada.' },
+                   note: 'Albacora entera, como llega del muelle.' },
   yuca:          { name: 'Yuca',          type: 'ingredient', price: 1,
-                   note: 'Raíz paciente. No se apura y no perdona el apuro.' },
+                   note: 'Raíz paciente. No perdona el apuro.' },
   cebolla:       { name: 'Cebolla',       type: 'ingredient', price: 1,
-                   note: 'Colorada, para curtir. Llora quien la corta.' },
+                   note: 'Colorada, para curtir.' },
   limon:         { name: 'Limón',         type: 'ingredient', price: 1,
                    note: 'Sutil y ácido. Cocina sin fuego.' },
   maiz:          { name: 'Choclo',        type: 'ingredient', price: 1,
-                   note: 'Maíz tierno de la sierra. Dulce cuando quiere.' },
+                   note: 'Maíz tierno de la sierra.' },
   papa:          { name: 'Papa',          type: 'ingredient', price: 1,
-                   note: 'De páramo. Hay más variedades que apellidos.' },
+                   note: 'De páramo. Más variedades que apellidos.' },
   leche:         { name: 'Leche',         type: 'ingredient', price: 1,
-                   note: 'De la hacienda o del cartón, según la casa.' },
+                   note: 'De la hacienda o del cartón.' },
   zapallo:       { name: 'Zapallo',       type: 'ingredient', price: 2,
-                   note: 'Dulce y enorme. Uno solo alcanza para todos los vecinos.' },
+                   note: 'Dulce y enorme.' },
   granos_mixtos: { name: 'Granos mixtos', type: 'ingredient', price: 3,
-                   note: 'Doce granos, o los que haya. La Semana Santa los junta.' },
+                   note: 'Doce granos, o los que haya.' },
   bacalao:       { name: 'Bacalao',       type: 'ingredient', price: 4,
-                   note: 'Salado y viajero. Llega una sola vez al año, y se nota.' },
+                   note: 'Salado y viajero. Llega una vez al año.' },
   hoja:          { name: 'Hoja',          type: 'ingredient', price: 1,
-                   note: 'De choclo o de achira. Envuelve, perfuma y guarda.' },
+                   note: 'De choclo o de achira. Envuelve y perfuma.' },
 
-  /* Utensilios (permanentes, no se consumen) */
-  pilon:  { name: 'Pilón',  type: 'tool', note: 'Madera gastada por generaciones de majar.' },
-  olla:   { name: 'Olla',   type: 'tool', note: 'Donde las cosas empiezan a ser comida.' },
-  sarten: { name: 'Sartén', type: 'tool', note: 'Curada con uso. No se presta.' },
-  tabla:  { name: 'Tabla',  type: 'tool', note: 'Cada cicatriz fue un almuerzo.' },
+  /* Utensilios */
+  cuchillo: { name: 'Cuchillo', type: 'tool', wear: 6, sharpenCost: 2,
+              note: 'Corta y pela. Se desafila con el uso; el afilador pasa por la lona.' },
+  pilon:    { name: 'Pilón',    type: 'tool', note: 'Madera gastada por generaciones de majar.' },
+  olla:     { name: 'Olla',     type: 'tool', note: 'Donde las cosas empiezan a ser comida.' },
+  sarten:   { name: 'Sartén',   type: 'tool', note: 'Curada con uso. No se presta.' },
+  molino:   { name: 'Molino',   type: 'tool', price: 6, buyable: true,
+              note: 'De manivela, pesado y fiel. Muele choclo como ninguno.' },
 
-  /* Técnicas (saberes, se registran solas) */
+  /* Técnicas */
+  pelar:    { name: 'Pelar',    type: 'technique', note: 'Quitar lo que sobra sin llevarse lo que importa.' },
   hervir:   { name: 'Hervir',   type: 'technique', note: 'El agua hace la mitad del trabajo.' },
   majar:    { name: 'Majar',    type: 'technique', note: 'Aplastar con ritmo, sin deshacer.' },
   curtir:   { name: 'Curtir',   type: 'technique', note: 'El ácido cocina en frío.' },
   envolver: { name: 'Envolver', type: 'technique', note: 'La hoja guarda el vapor y el secreto.' },
   dorar:    { name: 'Dorar',    type: 'technique', note: 'El fuego firma al final.' },
   mezclar:  { name: 'Mezclar',  type: 'technique', note: 'Unir sin apurar.' },
+  moler:    { name: 'Moler',    type: 'technique', note: 'Vuelta a vuelta, el grano se rinde.' },
 
-  /* Preparaciones (se consumen al usarlas) */
+  /* Preparaciones */
+  verde_pelado:     { name: 'Verde pelado',        type: 'prep' },
   verde_cocido:     { name: 'Verde cocido',        type: 'prep' },
   verde_majado:     { name: 'Verde majado',        type: 'prep' },
   masa_bolon:       { name: 'Masa de bolón',       type: 'prep' },
   curtido:          { name: 'Curtido',             type: 'prep' },
+  pescado_limpio:   { name: 'Pescado limpio',      type: 'prep' },
   yuca_cocida:      { name: 'Yuca cocida',         type: 'prep' },
   caldo_pescado:    { name: 'Caldo de pescado',    type: 'prep' },
   base_encebollado: { name: 'Base de encebollado', type: 'prep' },
@@ -80,7 +93,7 @@ const ITEMS = {
   crema_base:       { name: 'Crema base',          type: 'prep' },
   base_fanesca:     { name: 'Base de fanesca',     type: 'prep' },
 
-  /* Platos (se venden) */
+  /* Platos */
   bolon:       { name: 'Bolón de verde', type: 'dish', sell: 4 },
   bolon_mixto: { name: 'Bolón mixto',    type: 'dish', sell: 6, variant: true },
   encebollado: { name: 'Encebollado',    type: 'dish', sell: 8 },
@@ -88,15 +101,52 @@ const ITEMS = {
   llapingacho: { name: 'Llapingacho',    type: 'dish', sell: 6 },
   fanesca:     { name: 'Fanesca',        type: 'dish', sell: 16, meta: true },
 
-  /* Cuando una combinación sale mal */
-  mezcla_rara: { name: 'Mezcla rara', type: 'junk', sell: 1,
-                 note: 'Nadie sabe qué es. La caserita la compra para las gallinas.' },
+  /* Inventos de la casa (nacen de RULES creativas) */
+  bolon_doble_queso: { name: 'Bolón doble queso', type: 'dish', sell: 5, creative: true,
+                       note: 'No es lo estándar, pero nadie lo devuelve.' },
+  humita_con_queso:  { name: 'Humita extra queso', type: 'dish', sell: 7, creative: true,
+                       note: 'Invento de la casa. La clientela repite.' },
+
+  /* Mezclas y desastres */
+  mezcla_rara:     { name: 'Mezcla rara',     type: 'junk', sell: 1,
+                     note: 'Nadie sabe qué es. La caserita la compra para los chanchitos.' },
+  verde_amargo:    { name: 'Verde amargo',    type: 'junk', sell: 0,
+                     note: 'Cocido con cáscara. Ni los chanchitos lo quieren.' },
+  leche_cortada:   { name: 'Leche cortada',   type: 'junk', sell: 0,
+                     note: 'El ácido la cortó al instante. A botar.' },
+  hoja_chamuscada: { name: 'Hoja chamuscada', type: 'junk', sell: 0,
+                     note: 'Humo y ceniza. Ni para envolver recuerdos.' },
 };
 
-/* ---------- Cuadernos ----------
-   steps: cada paso tiene un acertijo (`hint`) en vez de
-   instrucción; `line` es la frase que queda escrita al lograrlo.
-   grants: primera canasta de regalo al comprar el cuaderno. */
+/* ---------- Reglas extra (LA base administrable) ----------
+   kind: 'fail' → error explícito con resultado y mensaje propios.
+         'creative' → invento vendible fuera del recetario.
+   Los insumos no-utensilio SIEMPRE se consumen al disparar una regla. */
+const RULES = [
+  { a: 'verde', b: 'olla', kind: 'fail', result: 'verde_amargo',
+    msg: 'Se coció con cáscara: amargó y manchó la olla. Primero se pela.' },
+  { a: 'verde', b: 'sarten', kind: 'fail', result: 'verde_amargo',
+    msg: 'Con cáscara y a fuego vivo: quemado por fuera, crudo por dentro.' },
+  { a: 'verde', b: 'pilon', kind: 'fail', result: 'mezcla_rara',
+    msg: 'Majar un verde crudo y con cáscara... el pilón casi se raja.' },
+  { a: 'leche', b: 'limon', kind: 'fail', result: 'leche_cortada',
+    msg: 'El ácido cortó la leche al instante.' },
+  { a: 'hoja', b: 'sarten', kind: 'fail', result: 'hoja_chamuscada',
+    msg: 'La hoja se chamuscó en dos segundos.' },
+  { a: 'pescado', b: 'sarten', kind: 'fail', result: 'mezcla_rara',
+    msg: 'Entero y sin limpiar a la plancha: espinas, escamas y humo.' },
+  { a: 'queso', b: 'sarten', kind: 'fail', result: 'mezcla_rara',
+    msg: 'El queso solo se derritió y se pegó. Qué desperdicio.' },
+
+  { a: 'masa_bolon', b: 'queso', kind: 'creative', result: 'bolon_doble_queso',
+    msg: 'Doble queso no es lo estándar… pero nadie se queja.' },
+  { a: 'bolon', b: 'queso', kind: 'creative', result: 'bolon_doble_queso',
+    msg: 'Relleno otra vez, recién hecho. Invento de la casa.' },
+  { a: 'humita', b: 'queso', kind: 'creative', result: 'humita_con_queso',
+    msg: 'Más queso a la humita. La sierra aprueba.' },
+];
+
+/* ---------- Cuadernos ---------- */
 const CUADERNOS = {
   bolon: {
     dish: 'bolon',
@@ -106,11 +156,14 @@ const CUADERNOS = {
     accent: '#9dbd8a',
     blurb: 'el desayuno de la abuela',
     intro: 'La primera página huele a domingo. Alguien anotó este desayuno con prisa y cariño, y el tiempo le borró la mitad.',
-    grants: ['olla', 'pilon', 'sarten', 'verde', 'verde', 'queso', 'queso'],
+    grants: ['cuchillo', 'olla', 'pilon', 'sarten', 'verde', 'verde', 'queso', 'queso'],
     steps: [
-      { a: 'verde',        b: 'olla',       result: 'verde_cocido', tech: 'hervir',
-        hint: 'Lo que el racimo dio, el agua caliente lo ablanda.',
-        line: 'El verde, aún terco, se rinde en agua hirviendo.' },
+      { a: 'verde',        b: 'cuchillo',   result: 'verde_pelado', tech: 'pelar',
+        hint: 'Antes del agua, quítale el abrigo.',
+        line: 'Primero se pela, aunque manche los dedos.' },
+      { a: 'verde_pelado', b: 'olla',       result: 'verde_cocido', tech: 'hervir',
+        hint: 'Ya sin cáscara, se rinde en agua caliente.',
+        line: 'Sin cáscara, el verde se ablanda sin amargar.' },
       { a: 'verde_cocido', b: 'pilon',      result: 'verde_majado', tech: 'majar',
         hint: 'Ya blando, pide golpes de madera vieja.',
         line: 'Golpe a golpe en el pilón, sin deshacerlo.' },
@@ -139,11 +192,14 @@ const CUADERNOS = {
       { a: 'cebolla',          b: 'limon',       result: 'curtido', tech: 'curtir',
         hint: 'La colorada llora hasta que el ácido la calma.',
         line: 'La cebolla se curte en limón mientras todo lo demás hierve.' },
+      { a: 'pescado',          b: 'cuchillo',    result: 'pescado_limpio', tech: 'pelar',
+        hint: 'La albacora llega entera; el cuchillo la deja lista.',
+        line: 'Se limpia la albacora con respeto y buen filo.' },
       { a: 'yuca',             b: 'olla',        result: 'yuca_cocida',
         hint: 'La raíz paciente, al agua.',
         line: 'La yuca, paciente, se ablanda sin quejarse.' },
-      { a: 'pescado',          b: 'olla',        result: 'caldo_pescado',
-        hint: 'El mar entero cabe en una olla.',
+      { a: 'pescado_limpio',   b: 'olla',        result: 'caldo_pescado',
+        hint: 'Limpio ya, el mar entero cabe en una olla.',
         line: 'La albacora suelta el mar entero en la olla.' },
       { a: 'caldo_pescado',    b: 'yuca_cocida', result: 'base_encebollado', tech: 'mezclar',
         hint: 'Junta lo que salió del mar con lo que salió de la tierra.',
@@ -161,19 +217,20 @@ const CUADERNOS = {
     cost: 8,
     accent: '#e0b45c',
     blurb: 'huele a domingo en la sierra',
-    intro: 'Un cuaderno de letra fina, con manchas de café. Las humitas de esta casa se envolvían entre tres generaciones.',
-    grants: ['tabla', 'maiz', 'hoja'],
+    intro: 'Un cuaderno de letra fina, con manchas de café. El molino de esta casa se vendió hace años; la lona tiene uno.',
+    grants: ['maiz', 'maiz', 'hoja'],
     steps: [
-      { a: 'maiz',            b: 'tabla', result: 'maiz_preparado', tech: 'mezclar',
-        hint: 'El dulce de la sierra se muele donde marcan los cuchillos viejos.',
-        line: 'El choclo se desgrana y se muele sobre la tabla.' },
-      { a: 'maiz_preparado',  b: 'queso', result: 'mezcla_humita',
+      { a: 'maiz',            b: 'molino', result: 'maiz_preparado', tech: 'moler',
+        hint: 'El dulce de la sierra pasa por la manivela.',
+        shopNote: 'El molino se compra en la lona, sección utensilios.',
+        line: 'Vuelta a vuelta, el choclo se vuelve masa.' },
+      { a: 'maiz_preparado',  b: 'queso',  result: 'mezcla_humita',
         hint: 'Lo dulce molido busca lo blanco y salado.',
         line: 'Con queso, la mezcla ya huele a media tarde.' },
-      { a: 'mezcla_humita',   b: 'hoja',  result: 'humita_envuelta', tech: 'envolver',
+      { a: 'mezcla_humita',   b: 'hoja',   result: 'humita_envuelta', tech: 'envolver',
         hint: 'Se viste con su propia ropa.',
         line: 'Su propia hoja la envuelve y le guarda el secreto.' },
-      { a: 'humita_envuelta', b: 'olla',  result: 'humita', tech: 'hervir',
+      { a: 'humita_envuelta', b: 'olla',   result: 'humita', tech: 'hervir',
         hint: 'Vapor y paciencia, nada más.',
         line: 'Al vapor, sin apuro. Con café, mejor.' },
     ],
@@ -186,7 +243,7 @@ const CUADERNOS = {
     cost: 8,
     accent: '#d9a0b0',
     blurb: 'doraditas, con corazón de queso',
-    intro: 'Páginas brillosas de manteca. Quien escribió esto atendía una plancha en el mercado y no tenía tiempo de terminar frases.',
+    intro: 'Páginas brillosas de manteca. Quien escribió esto atendía una plancha en el mercado y no terminaba las frases.',
     grants: ['papa', 'papa'],
     steps: [
       { a: 'papa',             b: 'olla',   result: 'papa_cocida', tech: 'hervir',
@@ -229,11 +286,28 @@ const CUADERNOS = {
 
 const CUADERNO_ORDER = ['bolon', 'encebollado', 'humita', 'llapingacho', 'fanesca'];
 
+/* ---------- La hueca: clientes y arriendo ---------- */
+const CLIENTES = [
+  { name: 'Doña Rosa',      icon: 'cliente_rosa' },
+  { name: 'Don Jacinto',    icon: 'cliente_jacinto' },
+  { name: 'La wawa Emilia', icon: 'cliente_wawa' },
+  { name: 'Aníbal, el chofer', icon: 'cliente_chofer' },
+];
+
+const HUECA = {
+  startRating: 5, maxRating: 10,
+  rentEvery: 5,        /* cada cuántos clientes pasa el dueño */
+  rent: 15,            /* en sucres (miles) */
+  patienceMs: 90000,   /* cuánto espera un cliente */
+  spawnMin: 5, spawnMax: 9,   /* acciones entre clientes */
+  tipMax: 2,           /* propina máxima */
+};
+
 /* ---------- Economía ---------- */
-const REWARDS = { step: 2, technique: 1, dish: 6, dishVariant: 4, dishMeta: 12 };
-const REVEAL_COST = 2;   /* ver la combinación exacta de un paso */
+const REWARDS = { step: 2, technique: 1, dish: 6, dishVariant: 4, dishMeta: 12, creative: 3 };
+const REVEAL_COST = 2;
 const INITIAL_COINS = 10;
-const RESCUE_COINS = 3;  /* la vecina ayuda si te quedas sin nada */
+const RESCUE_COINS = 3;
 
 /* ---------- Microcopy ---------- */
 const MICROCOPY = {
@@ -241,13 +315,18 @@ const MICROCOPY = {
     'Eso no era. Quedó una mezcla rara.',
     'Mmm... mejor no probarla.',
     'La página no decía eso. Mezcla rara.',
-    'A las gallinas les va a encantar.',
   ],
+  dishOnMesa: 'Eso ya está terminado. En la lona te lo compran.',
+  junkOnMesa: 'Eso ya no se arregla. Véndelo… o bótalo.',
   crafted: 'Otra vez, de memoria.',
   bought: 'En la lona siempre aparece algo útil.',
   sold: 'La caserita paga sin regatear.',
-  noCoins: 'Faltan fichas. Vende algo o descubre un paso.',
-  rescue: 'La vecina dejó unas fichas en la puerta. Buena gente.',
-  allDone: 'El recetario respira completo. Por ahora.',
+  tossed: 'A la basura, sin pena.',
+  noCoins: 'Faltan sucres. Vende algo o atiende la hueca.',
+  rescue: 'La vecina dejó unos sucres en la puerta. Buena gente.',
+  allDone: 'El recetario respira completo. La hueca sigue abierta.',
   toolsClank: 'Dos utensilios solo hacen ruido.',
+  dullKnife: 'El cuchillo no corta ni mantequilla. El afilador está en la lona.',
+  served: '¡Servido caliente! La hueca suena a cucharas.',
+  missed: 'Se fue con hambre. Eso se comenta en el barrio…',
 };
