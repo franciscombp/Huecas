@@ -16,8 +16,10 @@ npx serve .        # o: python3 -m http.server
 
 Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 
-## El bucle
+## El bucle (v5)
 
+0. **Empieza suave**: solo tú, la mesa y el cuaderno del bolón. Un onboarding
+   de tres pasos explica descubrir / atender / sobrevivir.
 1. Los cuadernos dan **acertijos**, no instrucciones; cada paso tiene botón
    **Intentar** (te lleva a la cocina) y **Espiar** (paga por ver el par exacto).
 2. Las recetas son realistas: el verde **se pela** antes de cocerse, el
@@ -34,8 +36,18 @@ Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 6. Cada 5 clientes, **don Aurelio pasa por el arriendo** (S/ 15.000).
    Con buena fama te fía una vez; sin sucres y sin fama, **la hueca cierra**
    — pero las recetas, técnicas y utensilios se quedan contigo para reabrir.
+7. **La presión escala**: mientras más platos dominas, más seguido llegan
+   los clientes y menos paciencia tienen (tabla `HUECA.pressure`).
+8. **Salubridad**: si 3 clientes seguidos se van sin servir, llega la
+   autoridad. Si tienes un plato listo que mostrar, pasas; si no, **clausura**.
+   (Truco: guarda siempre un plato de reserva.)
+9. **Metas de largo plazo** (`MILESTONES`): a los 10, 25, 50 y 100 clientes
+   servidos subes de categoría (Hueca de barrio → Patrimonio del sabor) con
+   premio en sucres — la hueca nunca "se termina".
+10. **Modo tranquilo**: el botón Servicio/Tranquilo del HUD pausa la
+    clientela, el arriendo y salubridad para solo descubrir recetas con calma.
 
-Guardado en `localStorage` (`huecas_save_v4`).
+Guardado en `localStorage` (`huecas_save_v5`).
 
 ## Arquitectura
 
