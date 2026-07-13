@@ -281,19 +281,21 @@ function serveCustomer(id) {
   state.consecutiveMisses = 0;
   queue.splice(idx, 1);
   buzz([30, 40, 60]);
-  toast(`${MICROCOPY.servedQueue}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
+  const gracias = c.thanks || MICROCOPY.servedQueue;
+  toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
 }
 
 function missCustomer(id, expired) {
   const idx = queue.findIndex(c => c.id === id);
   if (idx < 0) return;
+  const c = queue[idx];
   queue.splice(idx, 1);
   state.rating = Math.max(0, state.rating - 1);
   state.missed += 1;
   state.consecutiveMisses += 1;
   buzz(90);
-  if (expired) toast(MICROCOPY.missed, 'soft');
+  if (expired) toast(c.left || MICROCOPY.missed, 'soft');
   afterResolve(true);
 }
 
@@ -301,7 +303,9 @@ function afterResolve(missed) {
   state.sinceRent += 1;
   renderHud();
   save();
-  if (currentScreen === 'cocina') { renderQueue(); renderDock(); }
+  /* sincroniza toda la cocina (mesa incluida) salvo si hay una cocción en curso:
+     así el plato servido no queda fantasma en la mesa ni deja botones muertos */
+  if (currentScreen === 'cocina') { if (combining) { renderQueue(); renderDock(); } else renderCocina(); }
   if (currentScreen === 'mercado') renderMercado();
   maybeUnlockRegion();
   if (missed && state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 700); return; }
@@ -576,9 +580,10 @@ function renderQueue() {
     const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
     const card = el('div', 'client' + (have ? ' ready' : ''));
     card.dataset.id = c.id;
+    if (c.line) card.title = `${c.name}: “${c.line}”`;
     card.innerHTML = `
       <span class="cl-avatar">${iconOf(c.icon)}</span>
-      <span class="cl-bubble">${iconOf(c.dish)}</span>
+      <span class="cl-bubble" title="Pide ${ITEMS[c.dish].name}">${iconOf(c.dish)}</span>
       <span class="cl-name">${c.name}</span>
       <div class="cl-bar-wrap"><span class="cl-bar" style="transform:scaleX(${frac})"></span></div>
       <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;

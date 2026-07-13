@@ -65,6 +65,9 @@ bolón + tigrillo sostiene la hueca.)
 5. Los platos listos se **venden o sirven desde la propia cocina** (pestaña
    Listos) o cuando un cliente los pide. Servir sube tu **fama** (paga mejor,
    con propina); dejar ir a alguien la baja. Recalentar un plato lo **quema**.
+   Los **vecinos tienen voz**: doña Rosa, Aníbal el chofer, la wawa Emilia y
+   otros llegan con su frase, agradecen a su manera cuando les sirves y
+   reclaman cuando se van con hambre.
 6. Cada 6 clientes, **don Aurelio pasa por el arriendo, que sube cada mes**
    (S/ 10.000, luego 16.000, 22.000…). Con buena fama te fía una vez; sin
    sucres y sin fama, **la hueca cierra** — pero recetas, técnicas y utensilios

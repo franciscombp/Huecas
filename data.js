@@ -356,10 +356,30 @@ const REGION_ORDER = ['costa', 'sierra'];
 
 /* ---------- La hueca: clientes y arriendo ---------- */
 const CLIENTES = [
-  { name: 'Doña Rosa',         icon: 'cliente_rosa' },
-  { name: 'Don Jacinto',       icon: 'cliente_jacinto' },
-  { name: 'La wawa Emilia',    icon: 'cliente_wawa' },
-  { name: 'Aníbal, el chofer', icon: 'cliente_chofer' },
+  { name: 'Doña Rosa',      icon: 'cliente_rosa',
+    line: 'Vengo saliendo de misa, mijo, con un hambre…',
+    thanks: '¡Dios le pague! Igualito al de mi finada mamá.',
+    left:  'Se me hizo tarde. Ya vuelvo otro día, si Dios quiere.' },
+  { name: 'Don Jacinto',    icon: 'cliente_jacinto',
+    line: 'Con hambre uno no piensa bien, oiga.',
+    thanks: 'Ve, quedó bueno. Esto se cuenta en el barrio.',
+    left:  'Nada… me voy con el estómago vacío. Qué pena.' },
+  { name: 'La wawa Emilia', icon: 'cliente_wawa',
+    line: '¿Ya mismito está? ¿Ya mismito?',
+    thanks: '¡Rico! ¿Y la ñapa, casera?',
+    left:  'Mi mami dice que ya nos vamos… ni modo.' },
+  { name: 'Aníbal',         icon: 'cliente_chofer',
+    line: 'Dejé la buseta en doble fila, apúreme.',
+    thanks: 'Gracias, maestra. Me voy pitando.',
+    left:  'No puedo esperar más, me multan. Chao.' },
+  { name: 'La seño Marlene', icon: 'cliente_rosa',
+    line: 'Es para llevar, que en la oficina esperan.',
+    thanks: 'Le encargo tres para el lunes. ¡Delicia!',
+    left:  'Uy, se me acabó la hora del almuerzo. Otro día.' },
+  { name: 'El compadre Beto', icon: 'cliente_jacinto',
+    line: 'Uno bien servido, casero, sin miseria.',
+    thanks: 'Así se hace. Este lugar tiene mano.',
+    left:  'Tanto esperar para nada… bueno, será.' },
 ];
 
 const HUECA = {
