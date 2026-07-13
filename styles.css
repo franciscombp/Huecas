@@ -578,3 +578,137 @@ svg { display: block; width: 100%; height: 100%; }
 .cook-btn.guardar { background: var(--paper-2); color: var(--ink-soft); box-shadow: 0 3px 0 var(--line), var(--shadow-sm); }
 .cook-btn.guardar:active { box-shadow: 0 0 0 var(--line), var(--shadow-sm); }
 .mesa-action { flex-wrap: wrap; gap: .5rem; }
+
+/* ============================================================
+   v7.3 — Pulido profesional
+   Sistema visual más consistente: profundidad, jerarquía y ritmo.
+   ============================================================ */
+
+:root {
+  --radius:    16px;
+  --radius-lg: 22px;
+  --shadow-sm: 0 1px 3px rgba(90, 75, 55, .08), 0 2px 8px rgba(90, 75, 55, .05);
+  --shadow:    0 2px 6px rgba(90, 75, 55, .07), 0 8px 24px rgba(90, 75, 55, .10);
+  --shadow-lg: 0 18px 48px rgba(74, 64, 56, .26);
+}
+
+/* --- HUD: sombra suave en vez de línea dura --- */
+.hud {
+  border-bottom: 1px solid rgba(232, 221, 198, .7);
+  box-shadow: 0 2px 12px rgba(90, 75, 55, .05);
+}
+.hud-pill.coins { box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+.hud-mode { transition: color .15s, border-color .15s, background .15s; }
+.hud-mode[data-mode="servicio"] { background: rgba(157,189,138,.12); }
+
+/* --- Portada: quitar el aro que parecía glitch, dar aire --- */
+.cover::after { display: none; }
+.cover { padding: 2.8rem 1.8rem 2.2rem; }
+.cover-quote { line-height: 1.6; }
+
+/* --- Barra de pestañas: indicador de pestaña activa --- */
+.tabbar { box-shadow: 0 -2px 16px rgba(90, 75, 55, .06); border-top: 1px solid rgba(232,221,198,.7); }
+.tab-btn { position: relative; transition: color .15s; }
+.tab-btn.current::before {
+  content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 30px; height: 3px; border-radius: 999px; background: var(--sello); opacity: .9;
+}
+
+/* --- Recetario: arreglar la rejilla rota (regiones apiladas) --- */
+.shelf-books { display: block; padding: 0; }
+.shelf-region {
+  display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap;
+  font-size: 1.15rem; color: var(--ink); margin: 1.2rem 1.2rem .2rem;
+  padding-bottom: .4rem; border-bottom: 1.5px dashed var(--line);
+}
+.shelf-region small { font-size: .8rem; color: var(--ink-soft); }
+.shelf-grid { grid-template-columns: repeat(2, 1fr); gap: .8rem; padding: .7rem 1.2rem 0; }
+.shelf-goal { margin-top: .2rem; }
+
+/* --- Tarjetas de cuaderno más nítidas --- */
+.book { border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.book:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+/* --- Cola de clientes: tarjetas más pulidas, pedido como globo --- */
+.k-clients { padding: .5rem .8rem .35rem; }
+.k-head { align-items: center; }
+.k-name { font-size: 1.15rem; }
+.queue { min-height: 102px; padding-top: .35rem; gap: .55rem; }
+.client {
+  width: 84px; border-radius: var(--radius); border-color: rgba(232,221,198,.9);
+  box-shadow: var(--shadow-sm); padding: .45rem .32rem .4rem; gap: .26rem;
+}
+.client.ready { box-shadow: 0 0 0 2px rgba(157,189,138,.35), var(--shadow-sm); }
+.cl-avatar { width: 38px; height: 38px; }
+.cl-bubble {
+  top: -.5rem; right: -.42rem; width: 30px; height: 30px;
+  background: var(--card); border: 2px solid var(--butter);
+  box-shadow: 0 2px 6px rgba(90,75,55,.18); padding: 3px;
+}
+.client.ready .cl-bubble { border-color: var(--sage-d); }
+.cl-name { font-size: .6rem; font-weight: 500; }
+.cl-bar-wrap { height: 5px; }
+.cl-serve { font-size: .66rem; padding: .28rem .3rem; font-weight: 600; }
+.client.seat { border-radius: var(--radius); }
+
+/* --- Escenario / mesa: superficie de trabajo con más carácter ---
+   overflow:hidden evita que, al crecer la despensa (pestaña Listos),
+   el contenido centrado se desborde hacia arriba y pise la cola. */
+.k-stage { gap: .45rem; padding: .5rem .8rem 0; overflow: hidden; justify-content: flex-start; }
+.mesa {
+  border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  padding: .8rem .85rem .7rem;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(224,180,92,.06), transparent 60%),
+    var(--card);
+}
+.cocina-surface { gap: .75rem; }
+.cocina-surface .plus { font-size: 1.8rem; opacity: .6; }
+.screen-fixed .slot { width: clamp(76px, 23vw, 100px); height: clamp(76px, 23vw, 100px); border-radius: var(--radius); border-width: 2px; }
+.slot.filled { box-shadow: inset 0 0 0 2px rgba(157,189,138,.25); }
+.mesa-action { min-height: 2.5rem; }
+.cook-btn { padding: .6rem 1.5rem; letter-spacing: .01em; }
+.mesa-foot { margin-top: .35rem; }
+/* la pista del cuaderno ahora vive ARRIBA de la mesa: siempre visible,
+   como una nota fijada sobre el mesón de trabajo */
+.k-stage > .cocina-riddle {
+  flex-shrink: 0; margin: 0; text-align: center;
+  background: var(--paper-2); border: 1.5px solid var(--line); border-radius: 12px;
+  padding: .5rem .75rem; font-size: .98rem; line-height: 1.3; color: var(--sky);
+}
+.riddle-label { display: block; margin-bottom: .08rem; }
+
+/* --- Chips de cuaderno activo --- */
+.chip-book { box-shadow: var(--shadow-sm); }
+.chip-book.current { box-shadow: 0 0 0 1.5px var(--ink); }
+
+/* --- Despensa: pestañas y tarjetas más definidas --- */
+.k-dock {
+  background: linear-gradient(180deg, var(--paper-2), #efe4cb);
+  border-top: 1px solid rgba(232,221,198,.9);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+  padding-top: .5rem;
+}
+.dock-tab { border-radius: 11px; box-shadow: var(--shadow-sm); transition: color .12s, border-color .12s, background .12s; }
+.dock-tab.current { background: var(--card); box-shadow: 0 0 0 1.5px var(--ink); }
+.dock-row { min-height: 90px; padding-top: .25rem; }
+.dock-row .item-card, .ready-top .item-card { box-shadow: var(--shadow-sm); }
+.ready-btn.serve, .ready-btn.sell { box-shadow: var(--shadow-sm); font-weight: 600; }
+.ready-btn.serve { box-shadow: 0 2px 0 var(--sage-d); }
+.quick-mini { font-weight: 500; padding: .3rem; border-radius: 999px; }
+.quick-mini:active { transform: scale(.98); }
+
+/* --- Ítems: badges y estados más limpios --- */
+.item-card { border-radius: 14px; border-color: rgba(232,221,198,.9); }
+.item-card .badge { box-shadow: 0 1px 3px rgba(0,0,0,.2); border: 1.5px solid var(--card); }
+
+/* --- Modales: un punto más de profundidad --- */
+.paso-card, .celebra-card { border-radius: var(--radius-lg); }
+.btn-main { box-shadow: 0 2px 5px rgba(90,75,55,.18), 0 6px 18px rgba(90,75,55,.12); }
+
+/* --- Toast con más presencia --- */
+.toast { box-shadow: var(--shadow-lg); font-weight: 500; padding: .58rem 1.2rem; }
+
+/* --- Mercado: encabezados alineados con el sistema --- */
+.market-book, .market-item { border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.market-section { border-bottom: 1.5px dashed var(--line); padding-bottom: .35rem; }
