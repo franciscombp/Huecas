@@ -628,7 +628,7 @@ function renderSlots() {
     if (slots[i]) { const card = itemCard(slots[i]); card.tabIndex = -1; zone.appendChild(card); }
     else zone.appendChild(el('span', 'slot-hint hand', i === 0 ? 'algo…' : '…con algo'));
   });
-  $('#mesa-clear').style.visibility = (slots[0] || slots[1]) ? 'visible' : 'hidden';
+  $('#mesa-clear').style.display = (slots[0] || slots[1]) ? '' : 'none';
 }
 
 function verbOf(sr) {
@@ -772,20 +772,23 @@ function renderDock() {
       card.addEventListener('click', () => placeInSlot(id));   /* colocar en mesa (recalentar / combos) */
       top.appendChild(card);
       wrap.appendChild(top);
+      const acts = el('div', 'ready-actions');
       const worth = ITEMS[id].sell;
       const wanted = queue.find(c => c.dish === id);
       if (wanted) {
         const sv = el('button', 'ready-btn serve', 'Servir');
         sv.addEventListener('click', () => serveCustomer(wanted.id));
-        wrap.appendChild(sv);
+        acts.appendChild(sv);
       }
-      const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `Vender +S/ ${S(worth)}` : 'Botar');
+      const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'Botar');
+      sell.title = worth ? `Vender por S/ ${S(worth)}` : 'Botar';
       sell.addEventListener('click', () => {
         addItem(id, -1);
         if (worth) { addCoins(worth); toast(MICROCOPY.sellFromKitchen, 'seal'); } else toast(MICROCOPY.tossed, 'soft');
         buzz(25); save(); renderCocina();
       });
-      wrap.appendChild(sell);
+      acts.appendChild(sell);
+      wrap.appendChild(acts);
       row.appendChild(wrap);
     });
   }

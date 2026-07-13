@@ -712,3 +712,263 @@ svg { display: block; width: 100%; height: 100%; }
 /* --- Mercado: encabezados alineados con el sistema --- */
 .market-book, .market-item { border-radius: var(--radius); box-shadow: var(--shadow-sm); }
 .market-section { border-bottom: 1.5px dashed var(--line); padding-bottom: .35rem; }
+
+/* ============================================================
+   v8 — Sabor de juego (touch-first)
+   Menos "app web", más puesto de comida: superficies físicas
+   (mostrador, tabla de picar, alacena), piezas grandes para el
+   dedo, profundidad y calidez. Todo escala con --frame.
+   ============================================================ */
+
+:root {
+  --wood:      #c99a67;
+  --wood-d:    #9c7043;
+  --wood-dd:   #7d5833;
+  --counter:   #ecd6ab;
+  --counter-d: #dcbf8c;
+  --board:     #f3e6c8;
+  --board-d:   #d8bd8f;
+  --tap: 48px;                 /* objetivo táctil mínimo */
+  --hud-h: 60px;
+  --tab-h: 68px;
+}
+
+/* Escena del marco: ambiente cálido con viñeta suave */
+#stage {
+  background:
+    var(--noise),
+    radial-gradient(130% 55% at 50% -6%, #fdeecb, transparent 62%),
+    linear-gradient(180deg, var(--paper) 0%, #f2e4c8 100%);
+  box-shadow: 0 0 80px rgba(60, 45, 25, .4);
+}
+
+/* ---------------- HUD como panel de juego ---------------- */
+.hud {
+  background: linear-gradient(180deg, #fffaef, #f5e9d1);
+  border-bottom: 2px solid var(--counter-d);
+  box-shadow: 0 3px 0 rgba(154,111,66,.10), 0 7px 18px rgba(90,75,55,.10);
+  padding-inline: .8rem; gap: .55rem;
+}
+.hud-pill.coins {
+  font-size: 1.18rem; font-weight: 700; letter-spacing: .01em;
+  padding: .36rem .9rem .36rem .5rem; color: #7c5b1d;
+  background: linear-gradient(180deg, #fff6dc, #f3dda2);
+  border: 2px solid var(--butter-d);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 2px 0 rgba(201,152,47,.4), var(--shadow-sm);
+}
+.coin-icon { width: 1.55rem; height: 1.55rem; }
+.hud-hearts { gap: 2px; }
+.heart { width: 1.32rem; height: 1.32rem; }
+.hud-mode {
+  min-height: 42px; font-size: .84rem; font-weight: 700; color: var(--ink-soft);
+  padding: .4rem .85rem; border-width: 2px; border-radius: 999px;
+  background: linear-gradient(180deg, #fffaef, #f0e4cd);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 2px 0 rgba(154,111,66,.18);
+}
+.hud-mode[data-mode="servicio"] { color: var(--sage-d); border-color: var(--sage); background: linear-gradient(180deg, #f3f8ee, #e5f0dc); }
+.mode-dot { width: .6rem; height: .6rem; }
+
+/* ---------------- Botones táctiles y con relieve ---------------- */
+.btn-main {
+  min-height: var(--tap); font-size: 1.05rem; font-weight: 700; letter-spacing: .01em;
+  border-radius: 16px; padding: .8rem 1.7rem;
+  box-shadow: 0 4px 0 #2e2822, 0 8px 18px rgba(74,64,56,.22);
+}
+.btn-main:active { transform: translateY(3px); box-shadow: 0 1px 0 #2e2822, 0 3px 8px rgba(74,64,56,.2); }
+.btn-main.wide { border-radius: 18px; }
+.btn-ghost { min-height: var(--tap); border-width: 2px; border-radius: 14px; font-weight: 600; }
+
+/* ---------------- COCINA como escena ---------------- */
+
+/* La calle/mostrador donde llega la clientela */
+.k-clients {
+  background: linear-gradient(180deg, rgba(255,250,239,.6), rgba(236,214,171,.35));
+  border-bottom: 2px solid var(--counter-d);
+  box-shadow: 0 2px 8px rgba(90,75,55,.06);
+  padding: .55rem .75rem .5rem;
+}
+.k-name { font-size: 1.28rem; }
+.kitchen-sub { font-size: .74rem; padding: .16rem .6rem; font-weight: 600; }
+
+/* fichas de cliente más grandes y "chapa" del pedido */
+.queue { min-height: 110px; gap: .6rem; }
+.client {
+  width: 92px; border-width: 2px; border-radius: 18px;
+  padding: .5rem .35rem .45rem; gap: .28rem;
+  background: linear-gradient(180deg, #fffdf7, #fbf3e2);
+  box-shadow: 0 3px 0 rgba(154,111,66,.12), var(--shadow-sm);
+}
+.client.ready { box-shadow: 0 0 0 3px rgba(157,189,138,.4), 0 3px 0 rgba(111,145,96,.25); }
+.cl-avatar { width: 44px; height: 44px; }
+.cl-bubble {
+  top: -.6rem; right: -.5rem; width: 34px; height: 34px; border-width: 2.5px;
+  box-shadow: 0 3px 7px rgba(90,75,55,.22);
+}
+.cl-name { font-size: .64rem; font-weight: 600; }
+.cl-bar-wrap { height: 6px; }
+.cl-serve {
+  min-height: 30px; font-size: .72rem; font-weight: 700; border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(0,0,0,.15);
+  max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.client.ready .cl-serve { box-shadow: 0 2px 0 var(--sage-d); }
+.client.seat { width: 94px; border-width: 2px; background: rgba(220,191,140,.12); }
+.seat-mark { font-size: 1.6rem; }
+
+/* superficie de trabajo: una tabla de picar sobre el mostrador */
+.k-stage {
+  background:
+    radial-gradient(140% 90% at 50% 0%, rgba(255,250,239,.5), transparent 55%),
+    linear-gradient(180deg, var(--counter) 0%, var(--counter-d) 100%);
+  padding: .6rem .8rem .7rem;
+  gap: .55rem;
+}
+.chip-book {
+  font-size: .86rem; padding: .36rem .8rem .36rem .4rem; border-width: 2px; border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(154,111,66,.15), var(--shadow-sm);
+}
+.chip-book .chip-icon { width: 1.7rem; height: 1.7rem; }
+.chip-book.current { background: #fffaef; box-shadow: 0 2px 0 var(--wood-d), var(--shadow-sm); }
+
+.k-stage > .cocina-riddle {
+  border-width: 2px; border-color: var(--board-d); border-radius: 14px;
+  background: linear-gradient(180deg, #fffaef, #f6ead0);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 2px 6px rgba(90,75,55,.08);
+  font-size: .96rem; padding: .45rem .75rem; line-height: 1.28;
+}
+
+/* la tabla llena el espacio libre del escenario y centra su contenido:
+   así nunca desborda ni esconde el botón de cocinar en pantallas bajas */
+.mesa {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  border: 3px solid var(--board-d); border-radius: 22px;
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.55), transparent 55%),
+    linear-gradient(180deg, #fbf1d9, #e7d4ac);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.55), 0 5px 0 var(--board-d), 0 11px 22px rgba(90,75,55,.18);
+  padding: .7rem .8rem .6rem;
+}
+/* casillas grandes para el dedo, pero conscientes de la altura de pantalla */
+.screen-fixed .slot {
+  width: clamp(70px, min(23vw, 11.5vh), 98px); height: clamp(70px, min(23vw, 11.5vh), 98px);
+  border-width: 3px; border-radius: 18px;
+  background: rgba(255,252,246,.75);
+  box-shadow: inset 0 2px 5px rgba(154,111,66,.12);
+}
+.slot.filled { background: rgba(157,189,138,.14); box-shadow: inset 0 0 0 2px rgba(157,189,138,.3); }
+.slot .item-card .icon { width: 3rem; height: 3rem; }
+.slot-hint { font-size: 1.1rem; }
+.cocina-surface .plus { font-size: 2.1rem; }
+
+.mesa-action { min-height: 2.4rem; margin-top: .4rem; }
+.cook-btn {
+  min-height: 52px; font-size: 1.15rem; font-weight: 700;
+  padding: .7rem 1.7rem; border-radius: 16px;
+  box-shadow: 0 4px 0 var(--butter-d), 0 8px 16px rgba(90,75,55,.16);
+}
+.cook-btn:active { transform: translateY(3px); }
+.cook-btn.known { box-shadow: 0 4px 0 var(--sage-d), 0 8px 16px rgba(90,75,55,.16); }
+.cook-btn.known:active { box-shadow: 0 1px 0 var(--sage-d); }
+.cook-btn.guardar { box-shadow: 0 4px 0 var(--board-d), 0 6px 12px rgba(90,75,55,.12); }
+.cook-ic { width: 1.75rem; height: 1.75rem; }
+.mesa-clear { font-size: .82rem; margin-top: .55rem; }
+
+/* alacena: cajón de madera con pestañas tipo etiqueta */
+.k-dock {
+  background: linear-gradient(180deg, var(--wood) 0%, var(--wood-d) 100%);
+  border-top: 3px solid var(--wood-dd);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.15);
+  padding: .55rem .6rem calc(.6rem + env(safe-area-inset-bottom));
+}
+.dock-tabs { gap: .35rem; margin-bottom: .5rem; }
+.dock-tab {
+  min-height: 46px; font-size: .8rem; font-weight: 700; border-width: 0; border-radius: 13px;
+  color: #6b4e2f; background: linear-gradient(180deg, #f7ead0, #e9d3ac);
+  box-shadow: 0 2px 0 rgba(0,0,0,.2);
+}
+.dock-tab.current {
+  color: var(--ink); background: linear-gradient(180deg, #fffaef, #fbf1dc);
+  box-shadow: 0 3px 0 rgba(0,0,0,.18), 0 0 0 2px rgba(255,255,255,.35);
+  transform: translateY(-1px);
+}
+.dt-ic { width: 1.4rem; height: 1.4rem; }
+.dock-badge { min-width: 1.25rem; height: 1.25rem; font-size: .66rem; border: 1.5px solid var(--wood-d); }
+.dock-row {
+  min-height: 92px; gap: .5rem; padding: .3rem .1rem .1rem;
+  background: rgba(60,40,20,.14); border-radius: 12px;
+}
+.dock-row .item-card {
+  width: 80px; border-width: 2px; border-radius: 15px;
+  background: linear-gradient(180deg, #fffdf7, #f6ecd8);
+  box-shadow: 0 2px 0 rgba(154,111,66,.2), var(--shadow-sm);
+}
+.dock-row .item-card .icon { width: 2.9rem; height: 2.9rem; }
+.dock-row .item-card .name { font-size: .72rem; font-weight: 500; }
+.dock-row .inv-none, .queue-empty { color: #fff3dd; opacity: .95; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+/* plato listo: ficha compacta con acciones en fila (servir / vender) */
+.ready-card { width: 124px; gap: .3rem; }
+.ready-card .item-card .name { font-size: .66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ready-actions { display: flex; gap: .3rem; }
+.ready-btn { flex: 1; min-height: 34px; font-size: .68rem; font-weight: 700; border-radius: 10px; padding: .2rem .3rem; }
+.ready-btn.serve { box-shadow: 0 2px 0 var(--sage-d); }
+.ready-btn.sell { box-shadow: 0 2px 0 #2e2822; }
+.ready-btn.toss { flex: 1; }
+/* el atajo a la lona es redundante con la pestaña inferior "Lona" */
+.quick-mini { display: none; }
+.quick-mini { color: #fff3dd; font-weight: 600; font-size: .82rem; margin-top: .45rem; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
+
+/* ítems: fichas físicas con relieve */
+.item-card { border-radius: 15px; }
+.item-card .icon { width: 2.7rem; height: 2.7rem; }
+.item-card .name { font-size: .72rem; }
+.item-card .badge { min-width: 1.35rem; height: 1.35rem; font-size: .7rem; border-width: 2px; }
+
+/* ---------------- Barra de pestañas como botonera de juego ---------------- */
+.tabbar {
+  background: linear-gradient(180deg, #fffaef, #f2e6cf);
+  border-top: 2px solid var(--counter-d);
+  box-shadow: 0 -3px 14px rgba(90,75,55,.08);
+}
+.tab-btn { font-size: .72rem; font-weight: 600; gap: .15rem; }
+.tab-icon { width: 2rem; height: 2rem; }
+.tab-btn.current .tab-icon { transform: translateY(-3px) scale(1.14); }
+.tab-btn.current::before { width: 34px; height: 4px; top: 5px; }
+
+/* ---------------- Portada más de "juego" ---------------- */
+.cover { border: 3px solid var(--counter-d); border-radius: 26px; box-shadow: 0 8px 0 var(--counter-d), var(--shadow-lg); }
+.cover-icons span { width: 60px; height: 60px; }
+.btn-main, .btn-ghost { touch-action: manipulation; }
+
+/* ---------------- Recetario / mercado: tarjetas con más cuerpo ---------------- */
+.book, .market-book, .market-item { border-width: 2px; }
+.book { box-shadow: 0 3px 0 rgba(154,111,66,.12), var(--shadow-sm); }
+.buy-btn { min-height: 40px; border-radius: 12px; font-weight: 700; box-shadow: 0 3px 0 #2e2822; }
+.buy-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #2e2822; }
+
+/* ---------------- Pantallas bajas (SE y similares): compactar ----------------
+   La cocina sin scroll en teléfonos cortos: se achica la clientela, la
+   alacena y las casillas para que la mesa y el botón de cocinar siempre
+   entren. En teléfonos normales se mantiene todo generoso. */
+@media (max-height: 730px) {
+  .k-clients { padding: .4rem .7rem .35rem; }
+  .k-name { font-size: 1.12rem; }
+  .queue { min-height: 84px; }
+  .client { width: 82px; padding: .4rem .3rem .35rem; gap: .2rem; }
+  .cl-avatar { width: 38px; height: 38px; }
+  .cl-bubble { width: 28px; height: 28px; top: -.45rem; right: -.4rem; }
+  .cl-name { font-size: .58rem; }
+  .client.seat { width: 82px; }
+  .k-stage { padding: .4rem .7rem .5rem; gap: .4rem; }
+  .chip-book { font-size: .8rem; }
+  .chip-book .chip-icon { width: 1.5rem; height: 1.5rem; }
+  .k-stage > .cocina-riddle { font-size: .9rem; padding: .38rem .65rem; }
+  .mesa-action { min-height: 2.1rem; }
+  .cook-btn { min-height: 46px; font-size: 1.06rem; }
+  .k-dock { padding-top: .4rem; }
+  .dock-tab { min-height: 40px; font-size: .74rem; }
+  .dock-row { min-height: 80px; }
+  .dock-row .item-card { width: 72px; }
+  .dock-row .item-card .icon { width: 2.5rem; height: 2.5rem; }
+  .dock-row .item-card .name { font-size: .68rem; }
+}
