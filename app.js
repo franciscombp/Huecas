@@ -169,6 +169,25 @@ function addCoins(n) {
   if (n > 0) { const c = $('#hud-coins-pill'); c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); }
 }
 
+/* --- microinteracciones --- */
+function bumpHearts(dir) {
+  const h = $('#hud-hearts'); if (!h) return;
+  h.classList.remove('bump', 'lose'); void h.offsetWidth;
+  h.classList.add(dir < 0 ? 'lose' : 'bump');
+  setTimeout(() => h.classList.remove('bump', 'lose'), 650);
+}
+/* corazón que sube desde la ficha del cliente servido */
+function popServe(id) {
+  const card = document.querySelector(`.client[data-id="${id}"]`);
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const b = el('span', 'serve-burst', iconOf('corazon'));
+  b.style.left = (r.left + r.width / 2) + 'px';
+  b.style.top = (r.top + r.height / 2) + 'px';
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 950);
+}
+
 function checkRescue() {
   const ing = marketIngredients();
   const cheapest = ing.length ? Math.min(...ing.map(id => ITEMS[id].price)) : 1;
@@ -279,8 +298,10 @@ function serveCustomer(id) {
   state.rating = Math.min(HUECA.maxRating, state.rating + 1);
   state.served += 1;
   state.consecutiveMisses = 0;
+  popServe(id);
   queue.splice(idx, 1);
   buzz([30, 40, 60]);
+  bumpHearts(1);
   const gracias = c.thanks || MICROCOPY.servedQueue;
   toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
@@ -295,6 +316,7 @@ function missCustomer(id, expired) {
   state.missed += 1;
   state.consecutiveMisses += 1;
   buzz(90);
+  bumpHearts(-1);
   if (expired) toast(c.left || MICROCOPY.missed, 'soft');
   afterResolve(true);
 }
