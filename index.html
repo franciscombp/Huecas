@@ -238,10 +238,19 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <nav id="tabbar" class="tabbar hidden">
-    <button type="button" class="tab-btn" data-screen="cocina"><span class="tab-icon" data-icon="tab_cocina"></span>Cocina</button>
-    <button type="button" class="tab-btn" data-screen="mercado"><span class="tab-icon" data-icon="tab_mercado"></span>Lona</button>
-    <button type="button" class="tab-btn" data-screen="shelf"><span class="tab-icon" data-icon="tab_libros"></span>Recetario</button>
+  <nav id="tabbar" class="tabbar hidden" aria-label="Navegación">
+    <button type="button" class="tab-btn" data-screen="mercado" aria-label="La lona del mercado">
+      <span class="tab-disc"><span class="tab-icon" data-icon="tab_mercado"></span></span>
+      <span class="tab-label">Lona</span>
+    </button>
+    <button type="button" class="tab-btn primary" data-screen="cocina" aria-label="La cocina">
+      <span class="tab-disc"><span class="tab-icon" data-icon="tab_cocina"></span></span>
+      <span class="tab-label">Cocina</span>
+    </button>
+    <button type="button" class="tab-btn" data-screen="shelf" aria-label="El recetario">
+      <span class="tab-disc"><span class="tab-icon" data-icon="tab_libros"></span></span>
+      <span class="tab-label">Recetario</span>
+    </button>
   </nav>
 
 </div>
