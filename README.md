@@ -16,13 +16,18 @@ npx serve .        # o: python3 -m http.server
 
 Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
 
-## La cocina (v7)
+## La cocina (v13)
 
-La **cocina cabe en una pantalla, sin scroll**, estilo Plants vs Zombies:
-arriba la **cola de clientes** (avatares con el plato que piden y una barra de
-paciencia), en el centro la **mesa de trabajo**, y abajo la **despensa con
-pestañas** (Utensilios · Ingredientes · Listos).
+La **cocina cabe en una pantalla, sin scroll**, y se centra en tres zonas
+grandes y legibles: arriba los **comensales** (avatares con el plato que piden
+y su paciencia), en el centro la **mesa** —la protagonista, con la ayuda
+manuscrita del cuaderno—, y abajo el estante de **platos listos** para servir.
 
+- Tocas el **➕ de la mesa** y se abre tu **despensa** (bottom sheet) con
+  ingredientes y utensilios; **lo que pide el paso brilla** y, si te falta,
+  lo **compras ahí mismo** en "En la lona · comprar" (con confirmación clara).
+- Al empezar hay **guía paso a paso**: la carta de la abuela → la receta del
+  bolón con **Intentar** → la mesa, con un *coach* que te dice qué hacer.
 - Pones dos cosas en la mesa y pulsas la acción. Mientras **no has descubierto**
   ese paso el botón dice **“Usar”** (sin spoiler); una vez descubierto muestra
   el verbo (Pelar, Freír, Majar…). El resultado se queda en la mesa para encadenar.
@@ -30,7 +35,7 @@ pestañas** (Utensilios · Ingredientes · Listos).
   con queso, verde con leche…) igual se hace, pero queda una **mezcla inútil**
   que solo estorba y **se pudre con el tiempo** si no la botas. El aviso es a
   **pantalla completa** con lógica realista, no un snackbar.
-- Un **plato listo** se vende o se sirve desde la propia cocina (pestaña Listos).
+- Un **plato listo** se vende o se sirve desde el estante de la propia cocina.
   Si lo vuelves a poner al fuego, **se quema**.
 
 ## Huecas por región
