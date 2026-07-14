@@ -416,6 +416,30 @@ const MILESTONES = [
     note: 'Cien platos servidos. Esto ya es historia nacional.' },
 ];
 
+/* ---------- Comensales de historia (empujan el progreso) ----------
+   Al llegar a `after` clientes servidos, aparece esta visita pidiendo un
+   plato que (probablemente) todavía NO sabes hacer. Se planta al frente de
+   la fila, CONGELA a los demás y no se va hasta que se lo sirvas. Sirve de
+   guía natural: te dice qué aprender para seguir creciendo.
+   Inspiración: los VIP de Diner Dash y los pedidos especiales de Stardew. */
+const VISITAS = [
+  { after: 3, name: 'Doña Fanny', icon: 'cliente_rosa', dish: 'tigrillo',
+    ask: 'Mija, me contaron que aquí va a salir un tigrillo de los de antes. Aquí me siento y no me muevo hasta probarlo… y que nadie me apure, ¿oyó?',
+    hintTo: 'Consigue el cuaderno del tigrillo en la lona y prepáraselo.',
+    reward: 15,
+    beat: '«¡Ese es el tigrillo de mi juventud!» Doña Fanny se limpia una lágrima y jura traer a toda su comadrería. Tu fama sube fuerte.' },
+  { after: 10, name: 'Aníbal, el chofer', icon: 'cliente_chofer', dish: 'encebollado',
+    ask: 'Casera, la noche fue larga y el cuerpo pide encebollado. Aquí me quedo en la banca hasta que salga uno que levante muertos.',
+    hintTo: 'El levantamuertos (encebollado) se aprende con su cuaderno de la lona.',
+    reward: 25,
+    beat: 'Aníbal resucita al primer sorbo. «Este puerto ya tiene su levantamuertos.» Ahora te manda a todos los choferes de la línea.' },
+  { after: 20, name: 'La seño Rosario', icon: 'cliente_wawa', dish: 'humita',
+    ask: 'Vengo bajando de la sierra y extraño una humita como Dios manda. No tengo apuro, hija: aquí espero, pero no me voy sin ella.',
+    hintTo: 'Abre la hueca serrana (domina 2 platos costeños) y consigue el cuaderno de la humita.',
+    reward: 40,
+    beat: 'La seño Rosario envuelve su humita como un tesoro. «Guayaquil y la sierra en una sola hueca.» La ciudad entera empieza a hablar de ti.' },
+];
+
 /* ---------- Economía ---------- */
 const REWARDS = { step: 2, technique: 1, dish: 6, dishVariant: 4, dishMeta: 12, creative: 3 };
 const REVEAL_COST = 2;

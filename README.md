@@ -68,6 +68,12 @@ bolón + tigrillo sostiene la hueca.)
    Los **vecinos tienen voz**: doña Rosa, Aníbal el chofer, la wawa Emilia y
    otros llegan con su frase, agradecen a su manera cuando les sirves y
    reclaman cuando se van con hambre.
+5b. **Comensales de historia** (`VISITAS`): tras servir cierta cantidad,
+   llega una **visita especial** que pide un plato que aún no sabes hacer
+   (el tigrillo, luego el encebollado, luego una humita serrana). Se planta
+   al frente, **congela la fila** —nadie más llega ni se va— y **espera sin
+   apuro** hasta que se lo sirvas. Al lograrlo hay recompensa y un momento
+   narrativo: es la guía natural para seguir creciendo.
 6. Cada 6 clientes, **don Aurelio pasa por el arriendo, que sube cada mes**
    (S/ 10.000, luego 16.000, 22.000…). Con buena fama te fía una vez; sin
    sucres y sin fama, **la hueca cierra** — pero recetas, técnicas y utensilios

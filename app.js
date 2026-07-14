@@ -52,6 +52,7 @@ function newState() {
     seenIntro: false,
     seenCarta: false,
     huecaName: '',       /* nombre que el jugador le pone a su hueca */
+    visitaIdx: 0,        /* próxima visita de historia por llegar */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
   grantBasket(s, CUADERNOS.bolon.grants);
@@ -213,10 +214,13 @@ function toast(msg, tone = 'ink') {
    RELOJ DE LA HUECA — cola continua de clientes
    ============================================================ */
 
-let queue = [];        /* [{ id, name, icon, dish, deadline, total }] */
+let queue = [];        /* [{ id, name, icon, dish, deadline, total, story? }] */
 let custId = 0;
 let lastSpawn = 0;
+let lastTick = 0;
 let gameClock = null;
+
+function storyGuest() { return queue.find(c => c.story); }
 
 function modalOpen() { return !!$('.modal.open'); }
 
@@ -229,14 +233,15 @@ function pressureTier() {
 
 function startClock() {
   if (gameClock) return;
-  lastSpawn = Date.now();
+  lastSpawn = lastTick = Date.now();
   gameClock = setInterval(clockTick, 250);
 }
 function stopClock() { clearInterval(gameClock); gameClock = null; }
 
 function clockTick() {
-  if (currentScreen === 'cover' || state.mode !== 'servicio' || modalOpen()) { lastSpawn = Date.now(); return; }
+  if (currentScreen === 'cover' || state.mode !== 'servicio' || modalOpen()) { lastSpawn = lastTick = Date.now(); return; }
   const now = Date.now();
+  const dt = now - lastTick; lastTick = now;
   /* pudrir mezclas inútiles que se quedaron en el mesón (aun sin platos) */
   if (state.junkBorn) {
     for (const id in state.junkBorn) {
@@ -250,6 +255,14 @@ function clockTick() {
     }
   }
   if (!realDishes().length) return;
+  /* una visita de historia CONGELA la fila: nadie más llega ni se va,
+     y las barras de paciencia se detienen hasta que la atiendas */
+  if (storyGuest()) {
+    queue.forEach(c => { if (!c.story && isFinite(c.deadline)) c.deadline += dt; });
+    lastSpawn = now;
+    if (currentScreen === 'cocina') updateQueueBars();
+    return;
+  }
   /* expirar */
   let expired = false;
   for (const c of [...queue]) if (now >= c.deadline) { missCustomer(c.id, true); expired = true; }
@@ -280,6 +293,7 @@ function spawnCustomer() {
 
 function updateQueueBars() {
   queue.forEach(c => {
+    if (c.story) return;                       /* la visita no tiene reloj */
     const bar = document.querySelector(`.client[data-id="${c.id}"] .cl-bar`);
     const card = document.querySelector(`.client[data-id="${c.id}"]`);
     if (!bar || !card) return;
@@ -295,18 +309,49 @@ function serveCustomer(id) {
   const c = queue[idx];
   if (count(c.dish) < 1) { toast('Todavía no tienes ese plato listo.', 'soft'); return; }
   addItem(c.dish, -1);
+  popServe(id);
+  if (c.story) { resolveVisita(c, idx); return; }
   const tip = rand(0, HUECA.tipMax);
   addCoins(customerPay(c.dish) + tip);
   state.rating = Math.min(HUECA.maxRating, state.rating + 1);
   state.served += 1;
   state.consecutiveMisses = 0;
-  popServe(id);
   queue.splice(idx, 1);
   buzz([30, 40, 60]);
   bumpHearts(1);
   const gracias = c.thanks || MICROCOPY.servedQueue;
   toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
+}
+
+/* --- Comensal de historia: llegada, atención y recompensa --- */
+function maybeVisita() {
+  if (state.visitaIdx >= VISITAS.length || storyGuest()) return;
+  const v = VISITAS[state.visitaIdx];
+  if (state.served < v.after) return;
+  queue.unshift({ id: ++custId, story: true, name: v.name, icon: v.icon, dish: v.dish, total: 0, deadline: Infinity });
+  lastSpawn = Date.now();
+  buzz([50, 40, 50]);
+  toast(`★ Llegó ${v.name}: pide ${ITEMS[v.dish].name} y no se irá sin él.`, 'seal');
+  if (currentScreen === 'cocina') renderQueue();
+  setTimeout(() => { if (!modalOpen()) showVisita(v); }, 900);
+}
+
+function resolveVisita(c, idx) {
+  const v = VISITAS[state.visitaIdx] || { reward: 12, beat: `${c.name} quedó feliz.` };
+  addCoins(v.reward);
+  state.rating = Math.min(HUECA.maxRating, state.rating + 2);
+  state.served += 1;
+  state.sinceRent += 1;
+  state.consecutiveMisses = 0;
+  state.visitaIdx += 1;
+  queue.splice(idx, 1);
+  buzz([40, 60, 90]);
+  bumpHearts(1);
+  save();
+  renderHud();
+  if (currentScreen === 'cocina') renderCocina();
+  showVisitaBeat(v);
 }
 
 function missCustomer(id, expired) {
@@ -333,6 +378,7 @@ function afterResolve(missed) {
   if (currentScreen === 'mercado') renderMercado();
   maybeUnlockRegion();
   if (missed && state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 700); return; }
+  if (!missed) maybeVisita();
   if (!missed && checkMilestone()) return;
   if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 800);
 }
@@ -351,6 +397,32 @@ function maybeUnlockRegion() {
       toast(MICROCOPY.regionUnlock, 'seal');
     }
   }
+}
+
+/* ---------- Visita de historia: modales ---------- */
+function showVisita(v) {
+  $('#visita-icon').innerHTML = iconOf(v.icon);
+  $('#visita-title').textContent = `Llegó ${v.name}`;
+  $('#visita-text').textContent = v.ask;
+  $('#visita-want').innerHTML = `<span class="vw-ic">${iconOf(v.dish)}</span> Quiere <b>${ITEMS[v.dish].name}</b>. ${v.hintTo}`;
+  $('#visita-want').style.display = '';
+  $('#visita-reward').style.display = 'none';
+  const btn = $('#visita-ok'); btn.textContent = 'Lo atiendo';
+  btn.onclick = () => $('#modal-visita').classList.remove('open');
+  $('#modal-visita').classList.add('open');
+}
+function showVisitaBeat(v) {
+  $('#visita-icon').innerHTML = iconOf(v.dish);
+  $('#visita-title').textContent = `¡${v.name} feliz!`;
+  $('#visita-text').textContent = v.beat;
+  $('#visita-want').style.display = 'none';
+  const rew = $('#visita-reward'); rew.style.display = ''; rew.textContent = `+S/ ${S(v.reward)} · +2 de fama`;
+  const btn = $('#visita-ok'); btn.textContent = '¡Qué orgullo!';
+  btn.onclick = () => {
+    $('#modal-visita').classList.remove('open');
+    if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 400);
+  };
+  $('#modal-visita').classList.add('open');
 }
 
 /* ---------- Salubridad ---------- */
@@ -583,16 +655,19 @@ function renderQueue() {
   const hueca = REGIONS[state.region];
   $('#kitchen-name').textContent = state.huecaName || hueca.name;
   const strip = $('#kitchen-sub');
+  const guest = storyGuest();
   if (!realDishes().length) { strip.textContent = 'Descubre tu primer plato para abrir'; strip.className = 'kitchen-sub calm'; }
   else if (state.mode === 'tranquilo') { strip.textContent = 'Modo tranquilo · sin clientes'; strip.className = 'kitchen-sub calm'; }
+  else if (guest) { strip.textContent = '★ Fila en pausa'; strip.className = 'kitchen-sub story'; }
   else if (state.consecutiveMisses >= 1) { strip.textContent = `⚠ ${state.consecutiveMisses}/${SALUBRIDAD.missLimit} sin servir · ten un plato listo`; strip.className = 'kitchen-sub warn'; }
   else { strip.textContent = 'Servicio abierto'; strip.className = 'kitchen-sub on'; }
 
   const row = $('#queue');
   row.innerHTML = '';
   if (state.mode === 'tranquilo') { row.appendChild(el('span', 'queue-empty hand', 'Explora recetas con calma 🌙')); return; }
-  /* asientos fijos: la fila no se colapsa aunque esté vacía */
-  for (let i = 0; i < HUECA.queueMax; i++) {
+  /* asientos fijos: la fila no se colapsa; la visita puede sumar un asiento */
+  const seats = Math.max(HUECA.queueMax, queue.length);
+  for (let i = 0; i < seats; i++) {
     const c = queue[i];
     if (!c) {
       const seat = el('div', 'client seat');
@@ -601,8 +676,23 @@ function renderQueue() {
       continue;
     }
     const have = count(c.dish) >= 1;
+    if (c.story) {
+      const card = el('div', 'client story' + (have ? ' ready' : ''));
+      card.dataset.id = c.id;
+      card.title = `${c.name}: “${c.ask || ''}”`;
+      card.innerHTML = `
+        <span class="cl-crown" aria-hidden="true">★</span>
+        <span class="cl-avatar">${iconOf(c.icon)}</span>
+        <span class="cl-bubble" title="Pide ${ITEMS[c.dish].name}">${iconOf(c.dish)}</span>
+        <span class="cl-name">${c.name}</span>
+        <div class="cl-wait">${have ? '¡listo!' : 'te espera'}</div>
+        <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;
+      card.querySelector('.cl-serve').addEventListener('click', () => serveCustomer(c.id));
+      row.appendChild(card);
+      continue;
+    }
     const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
-    const card = el('div', 'client' + (have ? ' ready' : ''));
+    const card = el('div', 'client' + (have ? ' ready' : '') + (guest ? ' frozen' : ''));
     card.dataset.id = c.id;
     if (c.line) card.title = `${c.name}: “${c.line}”`;
     card.innerHTML = `
