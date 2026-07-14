@@ -50,6 +50,8 @@ function newState() {
     mode: 'servicio',
     milestonesHit: [],
     seenIntro: false,
+    seenCarta: false,
+    huecaName: '',       /* nombre que el jugador le pone a su hueca */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
   grantBasket(s, CUADERNOS.bolon.grants);
@@ -579,7 +581,7 @@ function renderCocina() {
 /* --- cola de clientes (estilo PvZ) --- */
 function renderQueue() {
   const hueca = REGIONS[state.region];
-  $('#kitchen-name').textContent = hueca.name;
+  $('#kitchen-name').textContent = state.huecaName || hueca.name;
   const strip = $('#kitchen-sub');
   if (!realDishes().length) { strip.textContent = 'Descubre tu primer plato para abrir'; strip.className = 'kitchen-sub calm'; }
   else if (state.mode === 'tranquilo') { strip.textContent = 'Modo tranquilo · sin clientes'; strip.className = 'kitchen-sub calm'; }
@@ -1044,18 +1046,50 @@ function shakeCard(card) { card.classList.add('shake'); setTimeout(() => card.cl
 function maybeIntro() { if (!state.seenIntro) $('#modal-intro').classList.add('open'); }
 function closeIntro() { state.seenIntro = true; save(); $('#modal-intro').classList.remove('open'); }
 
+/* La carta de la abuela: apertura + ponerle nombre a la hueca */
+function openCarta() {
+  const input = $('#carta-input');
+  input.value = state.huecaName || '';
+  $('#modal-carta').classList.add('open');
+  setTimeout(() => { try { input.focus(); } catch (e) {} }, 250);
+}
+function closeCarta() {
+  const name = $('#carta-input').value.trim().slice(0, 26) || 'La hueca de la abuela';
+  state.huecaName = name;
+  state.seenCarta = true;
+  save();
+  $('#modal-carta').classList.remove('open');
+  show('cocina');
+  maybeIntro();
+}
+
+/* Pantalla completa (donde el navegador lo permite; iOS usa "añadir a inicio") */
+function fsSupported() { return !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen); }
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  try {
+    if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  } catch (e) {}
+}
+function tryFullscreen() { if (fsSupported() && !(document.fullscreenElement || document.webkitFullscreenElement)) toggleFullscreen(); }
+
 /* ============================================================
    ARRANQUE
    ============================================================ */
 
 function bindEvents() {
-  $('#btn-continue').addEventListener('click', () => { show('cocina'); maybeIntro(); });
+  $('#btn-continue').addEventListener('click', () => { tryFullscreen(); show('cocina'); maybeIntro(); });
   $('#btn-new').addEventListener('click', () => {
     const fresh = !load();
     if (fresh || confirm('¿Empezar una hueca nueva? La actual se perderá.')) {
-      state = newState(); queue = []; save(); renderHud(); show('cocina'); maybeIntro();
+      tryFullscreen();
+      state = newState(); queue = []; save(); renderHud(); openCarta();
     }
   });
+  $('#carta-open').addEventListener('click', closeCarta);
+  $('#carta-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') closeCarta(); });
+  $('#cover-fs').addEventListener('click', toggleFullscreen);
   $$('#tabbar .tab-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
   $('#receta-back').addEventListener('click', () => show('shelf'));
   $('#hud-mode').addEventListener('click', toggleMode);
@@ -1090,6 +1124,7 @@ function init() {
   state = saved || newState();
   $('#btn-continue').style.display = saved ? '' : 'none';
   $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
+  if (!fsSupported()) document.body.classList.add('no-fs');
   $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
   renderHud();
