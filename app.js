@@ -53,6 +53,7 @@ function newState() {
     seenCarta: false,
     huecaName: '',       /* nombre que el jugador le pone a su hueca */
     visitaIdx: 0,        /* próxima visita de historia por llegar */
+    muted: false,        /* silenciar sonido */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
   grantBasket(s, CUADERNOS.bolon.grants);
@@ -125,6 +126,96 @@ function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
+
+/* ============================================================
+   JUICE — sonido, monedas que vuelan, confeti y combos
+   (para que cada acción se sienta rica, estilo Candy Crush)
+   ============================================================ */
+
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; } }
+  if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e) {} }
+}
+const SFX = {
+  place: [{ f: 430, d: .07, g: .09, w: 'sine' }],
+  cook:  [{ f: 300, d: .12, g: .1, w: 'triangle' }, { f: 600, t: .06, d: .12, g: .08, w: 'triangle' }],
+  coin:  [{ f: 900, d: .05, g: .11 }, { f: 1350, t: .05, d: .07, g: .11 }],
+  serve: [{ f: 523, d: .1, g: .11 }, { f: 659, t: .08, d: .1, g: .11 }, { f: 784, t: .16, d: .16, g: .12 }],
+  win:   [{ f: 523, d: .12, g: .12 }, { f: 659, t: .1, d: .12, g: .12 }, { f: 784, t: .2, d: .12, g: .12 }, { f: 1046, t: .3, d: .22, g: .13 }],
+  fail:  [{ f: 196, d: .2, g: .1, w: 'sawtooth' }],
+  tab:   [{ f: 660, d: .05, g: .06, w: 'sine' }],
+};
+function sfx(type) {
+  if (state && state.muted) return;
+  initAudio(); if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  (SFX[type] || []).forEach(n => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = n.w || 'sine'; o.frequency.value = n.f;
+    const t0 = now + (n.t || 0), dur = n.d || .1;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(n.g || .1, t0 + .012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g).connect(audioCtx.destination);
+    o.start(t0); o.stop(t0 + dur + .03);
+  });
+}
+
+/* moneda(s) que vuelan hacia el monedero del HUD */
+function flyCoins(x, y, n = 1) {
+  const pill = $('#hud-coins-pill'); if (!pill) return;
+  const r = pill.getBoundingClientRect();
+  const tx = r.left + r.width / 2, ty = r.top + r.height / 2;
+  const k = Math.max(1, Math.min(n, 7));
+  for (let i = 0; i < k; i++) {
+    const c = el('span', 'fly-coin', iconOf('ficha'));
+    const jx = x + (Math.random() * 30 - 15), jy = y + (Math.random() * 20 - 10);
+    c.style.left = jx + 'px'; c.style.top = jy + 'px';
+    c.style.transitionDelay = (i * 55) + 'ms';
+    document.body.appendChild(c);
+    requestAnimationFrame(() => { c.style.transform = `translate(${tx - jx}px, ${ty - jy}px) scale(.45)`; c.style.opacity = '.2'; });
+    setTimeout(() => c.remove(), 850 + i * 55);
+  }
+  setTimeout(() => { const p = $('#hud-coins-pill'); p.classList.remove('pulse'); void p.offsetWidth; p.classList.add('pulse'); sfx('coin'); }, 380);
+}
+
+/* estallido de confeti en un punto */
+function burst(x, y, colors) {
+  const wrap = el('div', 'burst'); wrap.style.left = x + 'px'; wrap.style.top = y + 'px';
+  const cols = colors || ['#9dbd8a', '#d9a0b0', '#93a7c4', '#e0b45c', '#c96f52'];
+  for (let i = 0; i < 16; i++) {
+    const p = el('i'); const a = Math.random() * 6.283, d = 26 + Math.random() * 46;
+    p.style.setProperty('--dx', (Math.cos(a) * d).toFixed(1) + 'px');
+    p.style.setProperty('--dy', (Math.sin(a) * d - 18).toFixed(1) + 'px');
+    p.style.background = cols[i % cols.length];
+    p.style.animationDelay = (Math.random() * .08).toFixed(2) + 's';
+    if (i % 2) p.style.borderRadius = '50%';
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 950);
+}
+function centerOf(sel) { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+
+/* combo: servir seguido sube el ánimo (solo brillo y sonido, sin tocar la economía) */
+let combo = 0, comboTimer = null;
+function bumpCombo() {
+  combo++;
+  clearTimeout(comboTimer);
+  comboTimer = setTimeout(() => { combo = 0; }, 5200);
+  if (combo >= 2) showCombo(combo);
+}
+function showCombo(n) {
+  const f = el('div', 'combo-pop', `¡Combo ×${n}!`);
+  $('#stage').appendChild(f);
+  setTimeout(() => f.remove(), 1000);
+}
+function toggleSound() {
+  state.muted = !state.muted; save();
+  const b = $('#hud-sound'); b.textContent = state.muted ? '🔇' : '🔊'; b.classList.toggle('off', state.muted);
+  if (!state.muted) { initAudio(); sfx('tab'); }
+}
 
 /* ---------- Navegación ---------- */
 
@@ -308,17 +399,21 @@ function serveCustomer(id) {
   if (idx < 0) return;
   const c = queue[idx];
   if (count(c.dish) < 1) { toast('Todavía no tienes ese plato listo.', 'soft'); return; }
+  const at = centerOf(`.client[data-id="${id}"]`);
   addItem(c.dish, -1);
   popServe(id);
-  if (c.story) { resolveVisita(c, idx); return; }
+  if (c.story) { resolveVisita(c, idx, at); return; }
   const tip = rand(0, HUECA.tipMax);
-  addCoins(customerPay(c.dish) + tip);
+  const pay = customerPay(c.dish) + tip;
+  addCoins(pay);
   state.rating = Math.min(HUECA.maxRating, state.rating + 1);
   state.served += 1;
   state.consecutiveMisses = 0;
   queue.splice(idx, 1);
   buzz([30, 40, 60]);
   bumpHearts(1);
+  sfx('serve'); bumpCombo();
+  if (at) { burst(at.x, at.y); flyCoins(at.x, at.y, Math.ceil(pay / 6)); }
   const gracias = c.thanks || MICROCOPY.servedQueue;
   toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
@@ -337,7 +432,7 @@ function maybeVisita() {
   setTimeout(() => { if (!modalOpen()) showVisita(v); }, 900);
 }
 
-function resolveVisita(c, idx) {
+function resolveVisita(c, idx, at) {
   const v = VISITAS[state.visitaIdx] || { reward: 12, beat: `${c.name} quedó feliz.` };
   addCoins(v.reward);
   state.rating = Math.min(HUECA.maxRating, state.rating + 2);
@@ -348,6 +443,9 @@ function resolveVisita(c, idx) {
   queue.splice(idx, 1);
   buzz([40, 60, 90]);
   bumpHearts(1);
+  sfx('win');
+  const p = at || centerOf('#cocina-surface');
+  if (p) { burst(p.x, p.y, ['#e0b45c', '#f0c463', '#fff3d0']); flyCoins(p.x, p.y, Math.ceil(v.reward / 6)); }
   save();
   renderHud();
   if (currentScreen === 'cocina') renderCocina();
@@ -896,9 +994,10 @@ function renderDock() {
       }
       const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'Botar');
       sell.title = worth ? `Vender por S/ ${S(worth)}` : 'Botar';
-      sell.addEventListener('click', () => {
+      sell.addEventListener('click', (e) => {
         addItem(id, -1);
-        if (worth) { addCoins(worth); toast(MICROCOPY.sellFromKitchen, 'seal'); } else toast(MICROCOPY.tossed, 'soft');
+        if (worth) { const p = e.currentTarget.getBoundingClientRect(); addCoins(worth); flyCoins(p.left + p.width / 2, p.top, Math.ceil(worth / 6)); toast(MICROCOPY.sellFromKitchen, 'seal'); }
+        else { sfx('fail'); toast(MICROCOPY.tossed, 'soft'); }
         buzz(25); save(); renderCocina();
       });
       acts.appendChild(sell);
@@ -922,6 +1021,7 @@ function placeInSlot(id, index = null) {
   let i = index;
   if (i === null) i = slots[0] === null ? 0 : slots[1] === null ? 1 : 1;
   slots[i] = id;
+  sfx('place'); buzz(12);
   renderCocina();
 }
 function clearMesa() { if (combining) return; slots[0] = slots[1] = null; renderCocina(); }
@@ -939,7 +1039,8 @@ function performCook(x, y) {
 
   if (act.good) {
     consume(); addItem(act.result, 1);
-    surface.classList.add('success'); buzz([30, 40, 60]);
+    surface.classList.add('success'); buzz([30, 40, 60]); sfx('cook');
+    const p = centerOf('#cocina-surface'); if (p) burst(p.x, p.y - 10, ['#e0b45c', '#9dbd8a', '#fff3d0']);
     setTimeout(() => {
       surface.classList.remove('success');
       slots[0] = act.result; slots[1] = null; combining = false;
@@ -951,7 +1052,7 @@ function performCook(x, y) {
   }
   /* percance: igual se hace algo inútil, y se explica a pantalla completa */
   consume(); addItem(act.result, 1);
-  surface.classList.add('shake'); buzz(90);
+  surface.classList.add('shake'); buzz(90); sfx('fail');
   setTimeout(() => {
     surface.classList.remove('shake');
     slots[0] = slots[1] = null; combining = false;
@@ -993,6 +1094,8 @@ function discover(id, source, kind) {
   let newTech = null;
   if (source.tech && !state.techniques.includes(source.tech)) { state.techniques.push(source.tech); newTech = source.tech; reward += REWARDS.technique; }
   addCoins(reward);
+  sfx(item.type === 'dish' ? 'win' : 'coin');
+  const p = centerOf('#cocina-surface'); if (p && reward) flyCoins(p.x, p.y, Math.ceil(reward / 6));
   if (item.type === 'dish') {
     if (!state.dishesDone.includes(id)) state.dishesDone.push(id);
     state.firstDishPending = wasFirstDish;
@@ -1169,24 +1272,25 @@ function tryFullscreen() { if (fsSupported() && !(document.fullscreenElement || 
    ============================================================ */
 
 function bindEvents() {
-  $('#btn-continue').addEventListener('click', () => { tryFullscreen(); show('cocina'); maybeIntro(); });
+  $('#btn-continue').addEventListener('click', () => { initAudio(); tryFullscreen(); show('cocina'); maybeIntro(); });
   $('#btn-new').addEventListener('click', () => {
     const fresh = !load();
     if (fresh || confirm('¿Empezar una hueca nueva? La actual se perderá.')) {
-      tryFullscreen();
+      initAudio(); tryFullscreen();
       state = newState(); queue = []; save(); renderHud(); openCarta();
     }
   });
-  $('#carta-open').addEventListener('click', closeCarta);
+  $('#carta-open').addEventListener('click', () => { initAudio(); closeCarta(); });
   $('#carta-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') closeCarta(); });
   $('#cover-fs').addEventListener('click', toggleFullscreen);
+  $('#hud-sound').addEventListener('click', toggleSound);
   $$('#tabbar .tab-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
   $('#receta-back').addEventListener('click', () => show('shelf'));
   $('#hud-mode').addEventListener('click', toggleMode);
   $('#quick-lona').addEventListener('click', () => show('mercado'));
   $('#quick-cocina').addEventListener('click', () => show('cocina'));
   $('#mesa-clear').addEventListener('click', clearMesa);
-  $$('#dock-tabs .dock-tab').forEach(b => b.addEventListener('click', () => { dockTab = b.dataset.tab; renderDock(); }));
+  $$('#dock-tabs .dock-tab').forEach(b => b.addEventListener('click', () => { dockTab = b.dataset.tab; sfx('tab'); renderDock(); }));
 
   [0, 1].forEach(i => {
     const zone = $('#slot-' + i);
@@ -1214,6 +1318,7 @@ function init() {
   state = saved || newState();
   $('#btn-continue').style.display = saved ? '' : 'none';
   $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
+  const sb = $('#hud-sound'); sb.textContent = state.muted ? '🔇' : '🔊'; sb.classList.toggle('off', !!state.muted);
   if (!fsSupported()) document.body.classList.add('no-fs');
   $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
