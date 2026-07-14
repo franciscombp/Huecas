@@ -1,0 +1,15 @@
+{
+  "name": "Huecas — saberes y sabores",
+  "short_name": "Huecas",
+  "description": "Heredaste una hueca en el Ecuador del 2000. Descubre recetas, atiende la cola y paga el arriendo.",
+  "lang": "es",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf4e4",
+  "theme_color": "#c99a67",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

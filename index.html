@@ -2,9 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
   <title>Huecas — saberes y sabores</title>
   <meta name="description" content="Heredaste una hueca en el Ecuador del 2000. Descubre recetas, atiende la cola y paga el arriendo.">
+  <!-- App instalable a pantalla completa (iOS y Android) -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Huecas">
+  <meta name="theme-color" content="#c99a67">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -38,6 +47,7 @@
           <button type="button" id="btn-continue" class="btn-main">Continuar</button>
           <button type="button" id="btn-new" class="btn-ghost">Abrir la hueca</button>
         </div>
+        <button type="button" id="cover-fs" class="cover-fs"><span class="fs-ic" aria-hidden="true">⛶</span> Jugar en pantalla completa</button>
       </div>
     </div>
   </main>
@@ -144,6 +154,26 @@
   </main>
 
   <!-- ================= Modales ================= -->
+  <div id="modal-carta" class="modal" role="dialog" aria-modal="true" aria-labelledby="carta-title">
+    <div class="carta-card">
+      <span class="carta-stamp" aria-hidden="true">Guayaquil, 2000</span>
+      <h3 id="carta-title" class="carta-title">Para quien herede la hueca</h3>
+      <div class="carta-body">
+        <p>Mijo, mija: si estás leyendo esto, ya me fui a cocinar con los santos.</p>
+        <p>No te dejo plata —esa se gasta— sino algo mejor: <b>el fogón que nunca dejé apagar</b> y este cuaderno con cada receta que aprendí a los golpes.</p>
+        <p>El barrio tiene hambre y don Aurelio cobra el arriendo sin falta. Pero si el verde huele bien y la gente vuelve, vas a estar bien. La mano se hace cocinando.</p>
+        <p>Ahora es tuya. Ponle nombre.</p>
+      </div>
+      <p class="carta-firma">— tu abuela Carmen 🌺</p>
+      <div class="carta-name">
+        <label for="carta-input">¿Cómo se va a llamar tu hueca?</label>
+        <input id="carta-input" class="carta-input" type="text" maxlength="26" placeholder="La hueca de la abuela" autocomplete="off">
+        <p class="carta-hint">Puedes dejarlo así y cambiarlo después.</p>
+      </div>
+      <button type="button" id="carta-open" class="btn-main wide">Abrir la hueca</button>
+    </div>
+  </div>
+
   <div id="modal-intro" class="modal" role="dialog" aria-modal="true">
     <div class="paso-card intro-card">
       <h3 class="paso-name hand">Tu hueca costeña</h3>
