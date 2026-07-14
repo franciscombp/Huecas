@@ -950,7 +950,7 @@ svg { display: block; width: 100%; height: 100%; }
    La cocina sin scroll en teléfonos cortos: se achica la clientela, la
    alacena y las casillas para que la mesa y el botón de cocinar siempre
    entren. En teléfonos normales se mantiene todo generoso. */
-@media (max-height: 730px) {
+@media (max-height: 780px) {
   .k-clients { padding: .4rem .7rem .35rem; }
   .k-name { font-size: 1.12rem; }
   .queue { min-height: 80px; }
@@ -1212,3 +1212,156 @@ body.no-fs .cover-fs { display: none; }
 .client, .client.seat { transition: box-shadow .2s ease, opacity .25s ease, filter .25s ease; }
 .cl-serve { transition: transform .12s ease, background .15s ease; }
 .dock-tab, .tab-disc { will-change: transform; }
+
+/* ============================================================
+   v12 — Escala grande (tipo Duolingo/Candy Crush) + JUICE
+   Textos y objetivos más grandes y legibles para todo público,
+   con retroalimentación jugosa en cada acción.
+   ============================================================ */
+
+/* ---------- Juice: monedas voladoras, confeti, combos, sonido ---------- */
+.fly-coin {
+  position: fixed; width: 30px; height: 30px; z-index: 82; pointer-events: none;
+  transition: transform .85s cubic-bezier(.5,-.15,.3,1), opacity .85s ease-in;
+  filter: drop-shadow(0 2px 3px rgba(90,75,55,.3));
+}
+.burst { position: fixed; z-index: 81; pointer-events: none; }
+.burst i { position: absolute; left: 0; top: 0; width: 10px; height: 10px; border-radius: 3px; animation: burst .85s ease-out forwards; }
+@keyframes burst { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(.3) rotate(220deg); opacity: 0; } }
+.combo-pop {
+  position: absolute; left: 50%; top: 26%; transform: translateX(-50%); z-index: 60; pointer-events: none;
+  font-family: var(--hand); font-weight: 700; font-size: 2.6rem; color: var(--sello);
+  text-shadow: 0 2px 0 #fff, 0 5px 12px rgba(201,111,82,.4);
+  animation: combo-pop 1s cubic-bezier(.2,1.5,.4,1) forwards;
+}
+@keyframes combo-pop {
+  0% { opacity: 0; transform: translateX(-50%) scale(.4) rotate(-8deg); }
+  25% { opacity: 1; transform: translateX(-50%) scale(1.15) rotate(4deg); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-34px) scale(1); }
+}
+.hud-sound {
+  font-size: 1.2rem; width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid var(--line); background: linear-gradient(180deg,#fffaef,#f0e4cd);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 2px 0 rgba(154,111,66,.18);
+}
+.hud-sound.off { opacity: .5; }
+.hud-sound:active { transform: scale(.9); }
+
+/* ---------- Escala tipográfica más grande ---------- */
+
+/* HUD — números grandes pero sin desbordar la barra */
+.hud { gap: .4rem; padding-inline: .55rem; }
+.hud-pill.coins { font-size: 1.2rem; padding: .3rem .7rem .3rem .42rem; flex-shrink: 0; white-space: nowrap; }
+#hud-coins { white-space: nowrap; }
+.coin-icon { width: 1.5rem; height: 1.5rem; }
+.hud-hearts { gap: 1px; min-width: 0; }
+.heart { width: 1.28rem; height: 1.28rem; }
+.hud-sound { width: 2.2rem; height: 2.2rem; font-size: 1.05rem; }
+.hud-mode { font-size: .8rem; padding: .38rem .58rem; flex-shrink: 0; }
+.slot-hint { font-size: 1.15rem; white-space: nowrap; }
+
+/* Cola de clientes */
+.k-name { font-size: 1.45rem; }
+.kitchen-sub { font-size: .86rem; padding: .2rem .7rem; }
+.cl-avatar { width: 46px; height: 46px; }
+.cl-bubble { width: 37px; height: 37px; }
+.cl-name { font-size: .82rem; font-weight: 600; }
+.cl-serve { font-size: .86rem; min-height: 36px; }
+.cl-wait { font-size: .68rem; }
+
+/* Recetario activo + pista */
+.chip-book { font-size: 1.02rem; }
+.chip-book .chip-icon { width: 1.9rem; height: 1.9rem; }
+.k-stage > .cocina-riddle { font-size: 1.12rem; }
+.riddle-label { font-size: .72rem; }
+.slot-hint { font-size: 1.3rem; }
+
+/* Botón de cocinar y mesa */
+.cook-btn { font-size: 1.28rem; min-height: 56px; }
+.cook-ic { width: 2rem; height: 2rem; }
+.mesa-clear { font-size: .92rem; }
+
+/* Alacena */
+.dock-tab { font-size: .96rem; min-height: 50px; }
+.dt-ic { width: 1.6rem; height: 1.6rem; }
+.dock-row .item-card .name { font-size: .86rem; font-weight: 600; }
+.item-card .name { font-size: .84rem; }
+.item-card .badge { min-width: 1.55rem; height: 1.55rem; font-size: .82rem; }
+.ready-btn { font-size: .82rem; min-height: 38px; }
+.dock-badge { min-width: 1.4rem; height: 1.4rem; font-size: .74rem; }
+
+/* Botones generales */
+.btn-main { font-size: 1.18rem; min-height: 54px; }
+.btn-ghost { font-size: 1.02rem; }
+
+/* Modales más legibles */
+.paso-name { font-size: 2rem; }
+.paso-line { font-size: 1.06rem; }
+.paso-tech { font-size: .96rem; }
+.paso-reward, .celebra-reward { font-size: 1.65rem; }
+.celebra-name { font-size: 2.3rem; }
+.celebra-line { font-size: 1.04rem; }
+.visita-want { font-size: 1.04rem; }
+.intro-list li { font-size: 1.04rem; }
+.intro-tip { font-size: 1.18rem; }
+
+/* Recetario / metas */
+.page-head h2 { font-size: 2.3rem; }
+.stat-n { font-size: 2rem; }
+.stat-l { font-size: .74rem; }
+.shelf-goal { font-size: 1.28rem; }
+.shelf-region { font-size: 1.3rem; }
+.book-title { font-size: 1.4rem; }
+.book-city { font-size: .72rem; }
+.price-tag { font-size: 1.08rem; }
+
+/* Página de receta */
+.step-line, .step-hint { font-size: 1.28rem; }
+.receta-head h2 { font-size: 1.9rem; }
+
+/* Mercado */
+.mercado-title { font-size: 2.1rem; }
+.mercado-sub { font-size: 1rem; }
+.market-section { font-size: 1.4rem; }
+.market-item .name { font-size: .86rem; }
+.mb-title { font-size: 1.3rem; }
+.price { font-size: .9rem; }
+.buy-btn { font-size: 1rem; }
+
+/* Toast más grande y legible */
+.toast { font-size: 1.02rem; padding: .7rem 1.3rem; }
+
+/* En pantallas bajas, moderar la escala de la cocina para no romper el no-scroll */
+@media (max-height: 780px) {
+  .k-name { font-size: 1.25rem; }
+  .cl-name { font-size: .72rem; }
+  .cl-serve { min-height: 30px; font-size: .78rem; }
+  .cl-avatar { width: 40px; height: 40px; }
+  .chip-book { font-size: .9rem; }
+  .k-stage > .cocina-riddle { font-size: 1rem; }
+  .cook-btn { min-height: 48px; font-size: 1.14rem; }
+  .dock-tab { min-height: 44px; font-size: .86rem; }
+  .dock-row .item-card .name { font-size: .78rem; }
+}
+
+/* Pantallas muy bajas (iPhone SE y menores): compactar aún más la cocina */
+@media (max-height: 705px) {
+  .k-clients { padding: .3rem .7rem .3rem; }
+  .queue { min-height: 74px; }
+  .cl-avatar { width: 36px; height: 36px; }
+  .cl-name { font-size: .66rem; }
+  .cl-serve { min-height: 27px; font-size: .74rem; }
+  .k-stage { gap: .25rem; padding-top: .3rem; }
+  .chip-book { font-size: .82rem; }
+  .chip-book .chip-icon { width: 1.4rem; height: 1.4rem; }
+  .k-stage > .cocina-riddle { font-size: .92rem; padding: .32rem .6rem; }
+  .screen-fixed .slot { width: clamp(60px, min(21vw, 9.5vh), 84px); height: clamp(60px, min(21vw, 9.5vh), 84px); }
+  .mesa-action { min-height: 1.7rem; }
+  .cook-btn { min-height: 43px; font-size: 1.06rem; }
+  .dock-tab { min-height: 40px; font-size: .78rem; }
+  .dock-row { min-height: 74px; }
+  .dock-row .item-card .icon { width: 2.3rem; height: 2.3rem; }
+  .dock-row .item-card .name { font-size: .72rem; }
+}
