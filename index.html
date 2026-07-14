@@ -67,28 +67,21 @@
 
       <div class="k-stage">
         <div id="cocina-chips" class="cocina-chips"></div>
-        <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
+        <div id="cocina-riddle" class="cocina-riddle" aria-live="polite"></div>
         <div class="mesa">
           <div id="cocina-surface" class="cocina-surface">
-            <div id="slot-0" class="slot" aria-label="Primera zona"></div>
+            <button type="button" id="slot-0" class="slot" aria-label="Primer ingrediente"></button>
             <span class="plus" aria-hidden="true">+</span>
-            <div id="slot-1" class="slot" aria-label="Segunda zona"></div>
+            <button type="button" id="slot-1" class="slot" aria-label="Segundo ingrediente"></button>
           </div>
           <div id="mesa-action" class="mesa-action"></div>
-          <div class="mesa-foot">
-            <button type="button" id="mesa-clear" class="mesa-clear">limpiar mesa</button>
-          </div>
+          <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
         </div>
       </div>
 
-      <div class="k-dock">
-        <div id="dock-tabs" class="dock-tabs">
-          <button type="button" class="dock-tab" data-tab="utensilios"><span data-icon="sarten" class="dt-ic"></span>Utensilios</button>
-          <button type="button" class="dock-tab current" data-tab="ingredientes"><span data-icon="verde" class="dt-ic"></span>Ingredientes</button>
-          <button type="button" class="dock-tab" data-tab="listos"><span data-icon="bolon" class="dt-ic"></span>Listos<span id="dock-listos-badge" class="dock-badge"></span></button>
-        </div>
-        <div id="dock-row" class="dock-row"></div>
-        <button type="button" id="quick-lona" class="quick-mini">Ir a la lona del mercado →</button>
+      <div class="k-ready">
+        <div class="k-ready-head"><span class="k-ready-title">Platos listos</span><span id="ready-count" class="ready-count"></span></div>
+        <div id="ready-shelf" class="ready-shelf"></div>
       </div>
 
     </div>
@@ -123,7 +116,7 @@
       <p id="receta-intro" class="receta-intro"></p>
       <p id="receta-progress" class="receta-progress hand"></p>
       <div id="receta-steps" class="receta-steps"></div>
-      <button type="button" id="receta-cook-btn" class="btn-main wide">Ir a cocinar</button>
+      <button type="button" id="receta-cook-btn" class="btn-main wide">Intentarlo en la mesa →</button>
     </div>
   </main>
 
@@ -154,24 +147,44 @@
     </div>
   </main>
 
+  <!-- Coach: guía paso a paso (señala qué hacer) -->
+  <div id="coach" class="coach hidden" aria-live="polite">
+    <div class="coach-bubble"><span id="coach-text"></span></div>
+  </div>
+
+  <!-- Despensa: se abre al tocar el + de la mesa -->
+  <div id="modal-despensa" class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="despensa-title">
+    <div class="sheet-card">
+      <div class="sheet-head">
+        <h3 id="despensa-title" class="sheet-title hand">¿Qué ponemos?</h3>
+        <button type="button" id="despensa-close" class="sheet-close" aria-label="Cerrar">✕</button>
+      </div>
+      <p id="despensa-need" class="sheet-need"></p>
+      <div id="despensa-body" class="sheet-body"></div>
+    </div>
+  </div>
+
   <!-- ================= Modales ================= -->
   <div id="modal-carta" class="modal" role="dialog" aria-modal="true" aria-labelledby="carta-title">
     <div class="carta-card">
-      <span class="carta-stamp" aria-hidden="true">Guayaquil, 2000</span>
-      <h3 id="carta-title" class="carta-title">Para quien herede la hueca</h3>
-      <div class="carta-body">
-        <p>Mijo, mija: si estás leyendo esto, ya me fui a cocinar con los santos.</p>
-        <p>No te dejo plata —esa se gasta— sino algo mejor: <b>el fogón que nunca dejé apagar</b> y este cuaderno con cada receta que aprendí a los golpes.</p>
-        <p>El barrio tiene hambre y don Aurelio cobra el arriendo sin falta. Pero si el verde huele bien y la gente vuelve, vas a estar bien. La mano se hace cocinando.</p>
-        <p>Ahora es tuya. Ponle nombre.</p>
+      <div class="carta-scroll">
+        <span class="carta-stamp" aria-hidden="true">Guayaquil, 2000</span>
+        <h3 id="carta-title" class="carta-title">Para quien herede la hueca</h3>
+        <div class="carta-body">
+          <p>Mijo, mija: si lees esto, ya me fui a cocinar con los santos.</p>
+          <p>No te dejo plata —esa se gasta— sino algo mejor: <b>el fogón que nunca dejé apagar</b> y este cuaderno con cada receta.</p>
+          <p>El barrio tiene hambre y don Aurelio cobra el arriendo sin falta. Si el verde huele bien y la gente vuelve, vas a estar bien.</p>
+          <p>Ahora es tuya. Ponle nombre.</p>
+        </div>
+        <p class="carta-firma">— tu abuela Carmen 🌺</p>
+        <div class="carta-name">
+          <label for="carta-input">¿Cómo se va a llamar tu hueca?</label>
+          <input id="carta-input" class="carta-input" type="text" maxlength="26" placeholder="La hueca de la abuela" autocomplete="off">
+        </div>
       </div>
-      <p class="carta-firma">— tu abuela Carmen 🌺</p>
-      <div class="carta-name">
-        <label for="carta-input">¿Cómo se va a llamar tu hueca?</label>
-        <input id="carta-input" class="carta-input" type="text" maxlength="26" placeholder="La hueca de la abuela" autocomplete="off">
-        <p class="carta-hint">Puedes dejarlo así y cambiarlo después.</p>
+      <div class="carta-foot">
+        <button type="button" id="carta-open" class="btn-main wide">Abrir la hueca →</button>
       </div>
-      <button type="button" id="carta-open" class="btn-main wide">Abrir la hueca</button>
     </div>
   </div>
 

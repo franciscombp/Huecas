@@ -54,6 +54,7 @@ function newState() {
     huecaName: '',       /* nombre que el jugador le pone a su hueca */
     visitaIdx: 0,        /* próxima visita de historia por llegar */
     muted: false,        /* silenciar sonido */
+    tutDone: false,      /* guía inicial completada (primer plato servido) */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
   grantBasket(s, CUADERNOS.bolon.grants);
@@ -340,7 +341,7 @@ function clockTick() {
         const q = state.inv[id];
         addItem(id, -q); addItem('podrido', q);
         toast(MICROCOPY.rotted, 'soft');
-        if (currentScreen === 'cocina') renderDock();
+        if (currentScreen === 'cocina') renderReady();
         save();
       }
     }
@@ -409,6 +410,7 @@ function serveCustomer(id) {
   state.rating = Math.min(HUECA.maxRating, state.rating + 1);
   state.served += 1;
   state.consecutiveMisses = 0;
+  state.tutDone = true;
   queue.splice(idx, 1);
   buzz([30, 40, 60]);
   bumpHearts(1);
@@ -472,7 +474,7 @@ function afterResolve(missed) {
   save();
   /* sincroniza toda la cocina (mesa incluida) salvo si hay una cocción en curso:
      así el plato servido no queda fantasma en la mesa ni deja botones muertos */
-  if (currentScreen === 'cocina') { if (combining) { renderQueue(); renderDock(); } else renderCocina(); }
+  if (currentScreen === 'cocina') { if (combining) { renderQueue(); renderReady(); } else renderCocina(); }
   if (currentScreen === 'mercado') renderMercado();
   maybeUnlockRegion();
   if (missed && state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 700); return; }
@@ -737,7 +739,7 @@ function renderReceta() {
 
 const slots = [null, null];
 let combining = false;
-let dockTab = 'ingredientes';
+let pickerSlot = 0;
 
 function renderCocina() {
   renderQueue();
@@ -745,7 +747,8 @@ function renderCocina() {
   renderSlots();
   renderMesaAction();
   renderRiddle();
-  renderDock();
+  renderReady();
+  updateCoach();
 }
 
 /* --- cola de clientes (estilo PvZ) --- */
@@ -837,8 +840,8 @@ function renderSlots() {
     const zone = $('#slot-' + i);
     zone.innerHTML = '';
     zone.classList.toggle('filled', !!slots[i]);
-    if (slots[i]) { const card = itemCard(slots[i]); card.tabIndex = -1; zone.appendChild(card); }
-    else zone.appendChild(el('span', 'slot-hint hand', i === 0 ? 'algo…' : '…con algo'));
+    if (slots[i]) { const card = itemCard(slots[i]); card.tabIndex = -1; card.style.pointerEvents = 'none'; zone.appendChild(card); }
+    else zone.innerHTML = `<span class="slot-plus" aria-hidden="true">+</span><span class="slot-add hand">agregar</span>`;
   });
   $('#mesa-clear').style.display = (slots[0] || slots[1]) ? '' : 'none';
 }
@@ -938,78 +941,147 @@ function renderRiddle() {
   note.innerHTML = `<span class="riddle-label">el cuaderno murmura…</span> <span class="hand">“${step.hint}”</span>`;
 }
 
-/* --- despensa con pestañas --- */
-function renderDock() {
-  $$('#dock-tabs .dock-tab').forEach(b => b.classList.toggle('current', b.dataset.tab === dockTab));
-  const row = $('#dock-row');
-  row.innerHTML = '';
-  const addCard = (id, opts = {}) => {
-    const card = itemCard(id);
-    const inSlots = slots.filter(s => s === id).length;
-    if (!isTool(id)) card.append(el('span', 'badge', String(count(id))));
-    if (!isTool(id) && count(id) - inSlots <= 0 && !opts.action) card.classList.add('spent');
-    if (isTool(id) && ITEMS[id].wear) {
-      const left = state.toolWear[id] ?? ITEMS[id].wear;
-      card.append(el('span', 'wear' + (left <= 0 ? ' dull' : left <= 2 ? ' low' : ''), left <= 0 ? '✕' : '▮'.repeat(left)));
-      if (left <= 0) card.classList.add('dull-tool');
-    }
-    card.draggable = true;
-    card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); card.classList.add('dragging'); });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    if (opts.onClick) card.addEventListener('click', opts.onClick);
-    else card.addEventListener('click', () => placeInSlot(id));
-    row.appendChild(card);
-    return card;
-  };
-
-  if (dockTab === 'utensilios') {
-    if (!state.tools.length) row.appendChild(el('span', 'inv-none hand', '—'));
-    state.tools.forEach(id => addCard(id));
-  } else if (dockTab === 'ingredientes') {
-    const ing = Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient').sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-    const preps = Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep').sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-    if (!ing.length && !preps.length) row.appendChild(el('span', 'inv-none hand', 'Pasa por la lona'));
-    ing.forEach(id => addCard(id));
-    preps.forEach(id => addCard(id));
-  } else { /* listos: platos y desastres, con vender/servir */
-    const done = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0);
-    if (!done.length) { row.appendChild(el('span', 'inv-none hand', 'Aún nada listo. ¡A cocinar!')); }
-    done.forEach(id => {
-      const wrap = el('div', 'ready-card');
-      const top = el('div', 'ready-top');
-      const card = itemCard(id);
-      card.append(el('span', 'badge ready-n', String(count(id))));
-      card.draggable = true;
-      card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); });
-      card.addEventListener('click', () => placeInSlot(id));   /* colocar en mesa (recalentar / combos) */
-      top.appendChild(card);
-      wrap.appendChild(top);
-      const acts = el('div', 'ready-actions');
-      const worth = ITEMS[id].sell;
-      const wanted = queue.find(c => c.dish === id);
-      if (wanted) {
-        const sv = el('button', 'ready-btn serve', 'Servir');
-        sv.addEventListener('click', () => serveCustomer(wanted.id));
-        acts.appendChild(sv);
-      }
-      const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'Botar');
-      sell.title = worth ? `Vender por S/ ${S(worth)}` : 'Botar';
-      sell.addEventListener('click', (e) => {
-        addItem(id, -1);
-        if (worth) { const p = e.currentTarget.getBoundingClientRect(); addCoins(worth); flyCoins(p.left + p.width / 2, p.top, Math.ceil(worth / 6)); toast(MICROCOPY.sellFromKitchen, 'seal'); }
-        else { sfx('fail'); toast(MICROCOPY.tossed, 'soft'); }
-        buzz(25); save(); renderCocina();
-      });
-      acts.appendChild(sell);
-      wrap.appendChild(acts);
-      row.appendChild(wrap);
-    });
+/* --- estante de platos listos (abajo, siempre visible) --- */
+function renderReady() {
+  const shelf = $('#ready-shelf'); shelf.innerHTML = '';
+  const done = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0);
+  const n = done.reduce((t, id) => t + count(id), 0);
+  $('#ready-count').textContent = n ? String(n) : '';
+  if (!done.length) {
+    shelf.appendChild(el('div', 'ready-empty hand', realDishes().length ? 'Cocina un plato en la mesa 🍳' : 'Aprende tu primera receta 📖'));
+    return;
   }
-  /* contador en la pestaña Listos */
-  const nReady = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0).reduce((t, id) => t + count(id), 0);
-  const badge = $('#dock-listos-badge');
-  badge.textContent = nReady || '';
-  badge.style.display = nReady ? '' : 'none';
+  done.forEach(id => {
+    const wrap = el('div', 'ready-card');
+    const top = el('div', 'ready-top');
+    const card = itemCard(id);
+    card.append(el('span', 'badge ready-n', String(count(id))));
+    card.draggable = true;
+    card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); });
+    card.addEventListener('click', () => placeInSlot(id));   /* recalentar / combos */
+    top.appendChild(card);
+    wrap.appendChild(top);
+    const acts = el('div', 'ready-actions');
+    const worth = ITEMS[id].sell;
+    const wanted = queue.find(c => c.dish === id);
+    if (wanted) {
+      const sv = el('button', 'ready-btn serve', 'Servir');
+      sv.addEventListener('click', () => serveCustomer(wanted.id));
+      acts.appendChild(sv);
+    }
+    const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'Botar');
+    sell.title = worth ? `Vender por S/ ${S(worth)}` : 'Botar';
+    sell.addEventListener('click', (e) => {
+      addItem(id, -1);
+      if (worth) { const p = e.currentTarget.getBoundingClientRect(); addCoins(worth); flyCoins(p.left + p.width / 2, p.top, Math.ceil(worth / 6)); toast(MICROCOPY.sellFromKitchen, 'seal'); }
+      else { sfx('fail'); toast(MICROCOPY.tossed, 'soft'); }
+      buzz(25); save(); renderCocina();
+    });
+    acts.appendChild(sell);
+    wrap.appendChild(acts);
+    shelf.appendChild(wrap);
+  });
+}
+
+/* --- el paso del cuaderno que toca ahora (para guiar) --- */
+function currentStep() {
+  const c = CUADERNOS[state.active]; if (!c) return null;
+  return c.steps.find(s => !knows(s.result) && !s.variant) || null;
+}
+function stepNeeds(id) {
+  const s = currentStep(); if (!s) return false;
+  return s.a === id || s.b === id;
+}
+
+/* --- despensa como hoja inferior: se abre al tocar el + de la mesa --- */
+function openPicker(index) {
+  if (combining) return;
+  pickerSlot = index;
+  renderPicker();
+  $('#modal-despensa').classList.add('open');
+  sfx('tab');
+}
+function closePicker() { $('#modal-despensa').classList.remove('open'); }
+
+function pickCard(id) {
+  const card = itemCard(id);
+  card.classList.add('pick-card');
+  const inSlots = slots.filter(s => s === id).length;
+  if (!isTool(id)) card.append(el('span', 'badge', String(count(id))));
+  const spent = !isTool(id) && count(id) - inSlots <= 0;
+  if (spent) card.classList.add('spent');
+  if (isTool(id) && ITEMS[id].wear) {
+    const left = state.toolWear[id] ?? ITEMS[id].wear;
+    card.append(el('span', 'wear' + (left <= 0 ? ' dull' : left <= 2 ? ' low' : ''), left <= 0 ? '✕' : '▮'.repeat(left)));
+    if (left <= 0) card.classList.add('dull-tool');
+  }
+  if (stepNeeds(id) && !spent) card.classList.add('needed');
+  card.addEventListener('click', () => {
+    if (spent) { toast('No te queda. Cómpralo abajo 👇', 'soft'); return; }
+    placeInSlot(id, pickerSlot);
+    closePicker();
+  });
+  return card;
+}
+function buyCard(id) {
+  const item = ITEMS[id];
+  const card = el('button', 'item-card pick-card buy-card type-' + item.type);
+  card.type = 'button'; card.dataset.buy = id;
+  card.innerHTML = `<span class="icon">${iconOf(id)}</span><span class="name">${item.name}</span><span class="buy-price">S/ ${S(item.price)}</span>`;
+  if (stepNeeds(id) && count(id) <= 0) card.classList.add('needed');
+  card.addEventListener('click', () => {
+    if (state.coins < item.price) { toast(MICROCOPY.noCoins, 'soft'); sfx('fail'); card.classList.add('shake'); setTimeout(() => card.classList.remove('shake'), 450); return; }
+    const r = card.getBoundingClientRect();
+    addCoins(-item.price); addItem(id, 1); save();
+    flyCoins(r.left + r.width / 2, r.top, 1);
+    toast(`¡Compraste ${item.name.toLowerCase()}! Ya está en tu despensa.`, 'seal');
+    buzz(20);
+    renderPicker();
+    /* resalta lo recién comprado en la despensa */
+    setTimeout(() => { const nc = document.querySelector(`#despensa-body .pick-card[data-id="${id}"]:not(.buy-card)`); if (nc) { nc.classList.add('just-bought'); setTimeout(() => nc.classList.remove('just-bought'), 1200); } }, 30);
+  });
+  return card;
+}
+function sheetSection(title, cards) {
+  const sec = el('div', 'sheet-sec');
+  sec.appendChild(el('h4', 'sheet-sec-title', title));
+  const grid = el('div', 'sheet-grid');
+  if (!cards.length) grid.appendChild(el('span', 'sheet-empty hand', '—'));
+  cards.forEach(c => grid.appendChild(c));
+  sec.appendChild(grid);
+  return sec;
+}
+function renderPicker() {
+  const step = currentStep();
+  const need = $('#despensa-need');
+  if (step) {
+    need.innerHTML = `El cuaderno pide: <b>${ITEMS[step.a].name}</b> ${isTool(step.a) ? '' : ''}+ <b>${ITEMS[step.b].name}</b>. Lo que sirve brilla ✨`;
+  } else { need.textContent = 'Elige un ingrediente o un utensilio para la mesa.'; }
+
+  const body = $('#despensa-body'); body.innerHTML = '';
+  const ing = Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
+  const preps = Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
+  const mine = [...preps, ...ing];
+  body.appendChild(sheetSection('Tu despensa', mine.map(id => pickCard(id))));
+  body.appendChild(sheetSection('Utensilios', state.tools.map(id => pickCard(id))));
+  const buyable = marketIngredients().filter(id => ITEMS[id].price != null);
+  body.appendChild(sheetSection('En la lona · comprar', buyable.map(id => buyCard(id))));
+}
+
+/* --- guía paso a paso (coach) --- */
+function updateCoach() {
+  const coach = $('#coach');
+  if (!coach) return;
+  const c = CUADERNOS[state.active];
+  /* la guía solo acompaña hasta cocinar el primer plato; luego los botones
+     “Servir” son evidentes y dejamos ver el estante de platos listos */
+  const hide = state.tutDone || currentScreen !== 'cocina' || state.mode !== 'servicio' || !c || count(c.dish) > 0;
+  if (hide) { coach.classList.add('hidden'); return; }
+  const [x, y] = slots;
+  $('#coach-text').textContent = (x || y)
+    ? 'Pulsa el botón grande para cocinar 👆'
+    : 'Toca una casilla ➕ y elige lo que pide el cuaderno';
+  coach.classList.remove('hidden');
 }
 
 function placeInSlot(id, index = null) {
@@ -1252,8 +1324,9 @@ function closeCarta() {
   state.seenCarta = true;
   save();
   $('#modal-carta').classList.remove('open');
-  show('cocina');
-  maybeIntro();
+  /* primera vez: te muestra la receta del bolón con el botón Intentar */
+  if (!state.seenIntro) { state.seenIntro = true; save(); openReceta('bolon'); }
+  else show('cocina');
 }
 
 /* Pantalla completa (donde el navegador lo permite; iOS usa "añadir a inicio") */
@@ -1287,17 +1360,17 @@ function bindEvents() {
   $$('#tabbar .tab-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
   $('#receta-back').addEventListener('click', () => show('shelf'));
   $('#hud-mode').addEventListener('click', toggleMode);
-  $('#quick-lona').addEventListener('click', () => show('mercado'));
   $('#quick-cocina').addEventListener('click', () => show('cocina'));
   $('#mesa-clear').addEventListener('click', clearMesa);
-  $$('#dock-tabs .dock-tab').forEach(b => b.addEventListener('click', () => { dockTab = b.dataset.tab; sfx('tab'); renderDock(); }));
+  $('#despensa-close').addEventListener('click', closePicker);
+  $('#modal-despensa').addEventListener('click', (e) => { if (e.target === $('#modal-despensa')) closePicker(); });
 
   [0, 1].forEach(i => {
     const zone = $('#slot-' + i);
     zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('over'));
     zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); if (id && ITEMS[id]) placeInSlot(id, i); });
-    zone.addEventListener('click', () => { if (!combining && slots[i]) { slots[i] = null; renderCocina(); } });
+    zone.addEventListener('click', () => { if (combining) return; if (slots[i]) { slots[i] = null; sfx('tab'); renderCocina(); } else openPicker(i); });
   });
 
   $('#arriendo-pay').addEventListener('click', resolveRent);
@@ -1316,6 +1389,7 @@ function bindEvents() {
 function init() {
   const saved = load();
   state = saved || newState();
+  if (state.served > 0) state.tutDone = true;   /* jugadores existentes ya no necesitan la guía */
   $('#btn-continue').style.display = saved ? '' : 'none';
   $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
   const sb = $('#hud-sound'); sb.textContent = state.muted ? '🔇' : '🔊'; sb.classList.toggle('off', !!state.muted);
