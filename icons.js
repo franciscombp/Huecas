@@ -153,6 +153,39 @@ ICONS.huevo = _svg(`
   <circle cx="32" cy="36" r="8" fill="#f2b84e"/>
   ${face(32, 36, .7)}`);
 
+ICONS.cafe = _svg(`
+  <path d="M18 24 L46 24 L50 50 Q50 54 46 54 H18 Q14 54 14 50 Z" fill="#b08a63"/>
+  <path d="M18 24 L46 24 L47 30 H17 Z" fill="#8a6240"/>
+  <ellipse cx="26" cy="42" rx="4" ry="2.8" fill="#5d4630" transform="rotate(-18 26 42)"/>
+  <ellipse cx="37" cy="45" rx="4" ry="2.8" fill="#5d4630" transform="rotate(14 37 45)"/>
+  <ellipse cx="32" cy="17" rx="5" ry="3.4" fill="#5d4630"/>
+  <ellipse cx="24" cy="14" rx="4" ry="2.8" fill="#6f543a" transform="rotate(-20 24 14)"/>
+  ${face(31, 38, .68)}`);
+
+ICONS.cafe_pasado = _svg(`
+  ${steam(30, 14)}
+  <path d="M12 26 Q12 50 30 50 Q48 50 48 26 Z" fill="#fbf6e9"/>
+  <path d="M12 26 Q12 50 30 50 Q48 50 48 26" fill="none" stroke="#e2d5ba" stroke-width="2"/>
+  <ellipse cx="30" cy="26" rx="18" ry="5.5" fill="#5d4630"/>
+  <path d="M48 30 Q57 30 56 37 Q55 43 46 43" fill="none" stroke="#e2d5ba" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="30" cy="52" rx="9" ry="2.5" fill="#e2d5ba"/>
+  ${face(30, 38, .72)}`);
+
+ICONS.huevo_frito = _svg(`
+  <path d="M14 34 Q12 22 24 20 Q30 12 40 17 Q52 16 52 28 Q56 38 46 44 Q40 52 28 48 Q14 48 14 34 Z" fill="#fdfaf0"/>
+  <path d="M14 34 Q12 22 24 20 Q30 12 40 17 Q52 16 52 28 Q56 38 46 44 Q40 52 28 48 Q14 48 14 34 Z" fill="none" stroke="#ece2c8" stroke-width="1.6"/>
+  <circle cx="33" cy="33" r="9.5" fill="#f2b84e"/>
+  <circle cx="30" cy="30" r="2.6" fill="#f8d489" opacity=".9"/>
+  ${face(33, 34, .68)}`);
+
+ICONS.bolon_huevo = _svg(`
+  <circle cx="32" cy="38" r="16" fill="#cfa561"/>
+  <circle cx="25" cy="34" r="2.4" fill="#f0e2b8"/>
+  <circle cx="39" cy="42" r="2" fill="#8fae7e"/>
+  <path d="M18 28 Q16 18 26 17 Q31 11 39 15 Q48 14 47 24 Q50 30 43 33 Q36 37 27 34 Q18 35 18 28 Z" fill="#fdfaf0"/>
+  <circle cx="33" cy="25" r="6.5" fill="#f2b84e"/>
+  ${face(32, 44, .72)}`);
+
 /* ============ Utensilios ============ */
 
 ICONS.pilon = _svg(`

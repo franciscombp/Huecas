@@ -26,44 +26,44 @@ const TYPES = {
    creative: plato inventado, no pertenece a ningún cuaderno. */
 const ITEMS = {
   /* Ingredientes */
-  verde:         { name: 'Verde',         type: 'ingredient', price: 1,
+  verde:         { name: 'Verde',         type: 'ingredient', price: 100,
                    note: 'Plátano macho, aún firme. En la costa, el día empieza aquí.' },
-  queso:         { name: 'Queso',         type: 'ingredient', price: 1,
+  queso:         { name: 'Queso',         type: 'ingredient', price: 100,
                    note: 'Fresco, de mesa o de hoja.' },
-  chicharron:    { name: 'Chicharrón',    type: 'ingredient', price: 2,
+  chicharron:    { name: 'Chicharrón',    type: 'ingredient', price: 200,
                    note: 'Crocante de cerdo. Un lujo de todos los días.' },
-  pescado:       { name: 'Pescado',       type: 'ingredient', price: 2,
+  pescado:       { name: 'Pescado',       type: 'ingredient', price: 200,
                    note: 'Albacora entera, como llega del muelle.' },
-  yuca:          { name: 'Yuca',          type: 'ingredient', price: 1,
+  yuca:          { name: 'Yuca',          type: 'ingredient', price: 100,
                    note: 'Raíz paciente. No perdona el apuro.' },
-  cebolla:       { name: 'Cebolla',       type: 'ingredient', price: 1,
+  cebolla:       { name: 'Cebolla',       type: 'ingredient', price: 100,
                    note: 'Colorada, para curtir.' },
-  limon:         { name: 'Limón',         type: 'ingredient', price: 1,
+  limon:         { name: 'Limón',         type: 'ingredient', price: 100,
                    note: 'Sutil y ácido. Cocina sin fuego.' },
-  maiz:          { name: 'Choclo',        type: 'ingredient', price: 1,
+  maiz:          { name: 'Choclo',        type: 'ingredient', price: 100,
                    note: 'Maíz tierno de la sierra.' },
-  papa:          { name: 'Papa',          type: 'ingredient', price: 1,
+  papa:          { name: 'Papa',          type: 'ingredient', price: 100,
                    note: 'De páramo. Más variedades que apellidos.' },
-  leche:         { name: 'Leche',         type: 'ingredient', price: 1,
+  leche:         { name: 'Leche',         type: 'ingredient', price: 100,
                    note: 'De la hacienda o del cartón.' },
-  zapallo:       { name: 'Zapallo',       type: 'ingredient', price: 2,
+  zapallo:       { name: 'Zapallo',       type: 'ingredient', price: 200,
                    note: 'Dulce y enorme.' },
-  granos_mixtos: { name: 'Granos mixtos', type: 'ingredient', price: 3,
+  granos_mixtos: { name: 'Granos mixtos', type: 'ingredient', price: 300,
                    note: 'Doce granos, o los que haya.' },
-  bacalao:       { name: 'Bacalao',       type: 'ingredient', price: 4,
+  bacalao:       { name: 'Bacalao',       type: 'ingredient', price: 400,
                    note: 'Salado y viajero. Llega una vez al año.' },
-  hoja:          { name: 'Hoja',          type: 'ingredient', price: 1,
+  hoja:          { name: 'Hoja',          type: 'ingredient', price: 100,
                    note: 'De choclo o de achira. Envuelve y perfuma.' },
-  huevo:         { name: 'Huevo',         type: 'ingredient', price: 1,
+  huevo:         { name: 'Huevo',         type: 'ingredient', price: 100,
                    note: 'De campo, yema naranja. El alma del tigrillo.' },
 
   /* Utensilios */
-  cuchillo: { name: 'Cuchillo', type: 'tool', wear: 6, sharpenCost: 2,
+  cuchillo: { name: 'Cuchillo', type: 'tool', wear: 6, sharpenCost: 200,
               note: 'Corta y pela. Se desafila con el uso; el afilador pasa por la lona.' },
   pilon:    { name: 'Pilón',    type: 'tool', note: 'Madera gastada por generaciones de majar.' },
   olla:     { name: 'Olla',     type: 'tool', note: 'Donde las cosas empiezan a ser comida.' },
   sarten:   { name: 'Sartén',   type: 'tool', note: 'Curada con uso. No se presta.' },
-  molino:   { name: 'Molino',   type: 'tool', price: 6, buyable: true,
+  molino:   { name: 'Molino',   type: 'tool', price: 600, buyable: true,
               note: 'De manivela, pesado y fiel. Muele choclo como ninguno.' },
 
   /* Técnicas */
@@ -101,23 +101,23 @@ const ITEMS = {
   base_fanesca:     { name: 'Base de fanesca',     type: 'prep' },
 
   /* Platos */
-  bolon:         { name: 'Bolón de verde', type: 'dish', sell: 3 },
-  bolon_mixto:   { name: 'Bolón mixto',    type: 'dish', sell: 5, variant: true },
-  tigrillo:      { name: 'Tigrillo',       type: 'dish', sell: 7 },
-  tigrillo_mixto:{ name: 'Tigrillo mixto', type: 'dish', sell: 9, variant: true },
-  encebollado:   { name: 'Encebollado',    type: 'dish', sell: 9 },
-  humita:        { name: 'Humita',         type: 'dish', sell: 6 },
-  llapingacho:   { name: 'Llapingacho',    type: 'dish', sell: 6 },
-  fanesca:       { name: 'Fanesca',        type: 'dish', sell: 18, meta: true },
+  bolon:         { name: 'Bolón de verde', type: 'dish', sell: 300 },
+  bolon_mixto:   { name: 'Bolón mixto',    type: 'dish', sell: 500, variant: true },
+  tigrillo:      { name: 'Tigrillo',       type: 'dish', sell: 700 },
+  tigrillo_mixto:{ name: 'Tigrillo mixto', type: 'dish', sell: 900, variant: true },
+  encebollado:   { name: 'Encebollado',    type: 'dish', sell: 900 },
+  humita:        { name: 'Humita',         type: 'dish', sell: 600 },
+  llapingacho:   { name: 'Llapingacho',    type: 'dish', sell: 600 },
+  fanesca:       { name: 'Fanesca',        type: 'dish', sell: 1800, meta: true },
 
   /* Inventos de la casa (nacen de RULES creativas) */
-  bolon_doble_queso: { name: 'Bolón doble queso', type: 'dish', sell: 5, creative: true,
+  bolon_doble_queso: { name: 'Bolón doble queso', type: 'dish', sell: 500, creative: true,
                        note: 'No es lo estándar, pero nadie lo devuelve.' },
-  humita_con_queso:  { name: 'Humita extra queso', type: 'dish', sell: 7, creative: true,
+  humita_con_queso:  { name: 'Humita extra queso', type: 'dish', sell: 700, creative: true,
                        note: 'Invento de la casa. La clientela repite.' },
 
   /* Mezclas y desastres */
-  mezcla_rara:     { name: 'Mezcla rara',     type: 'junk', sell: 1, rots: true,
+  mezcla_rara:     { name: 'Mezcla rara',     type: 'junk', sell: 100, rots: true,
                      note: 'Nadie sabe qué es. La caserita la compra para los chanchitos.' },
   engrudo:         { name: 'Engrudo',         type: 'junk', sell: 0, rots: true,
                      note: 'Masa pegajosa y sin gracia. Ni para pegar afiches.' },
@@ -153,7 +153,7 @@ const RULES = [
   { a: 'queso', b: 'sarten', kind: 'fail', result: 'mezcla_rara',
     msg: 'El queso solo se derritió y se pegó. Qué desperdicio.' },
 
-  { a: 'masa_bolon', b: 'queso', kind: 'creative', result: 'bolon_doble_queso',
+  { a: 'bolon_crudo', b: 'queso', kind: 'creative', result: 'bolon_doble_queso',
     msg: 'Doble queso no es lo estándar… pero nadie se queja.' },
   { a: 'bolon', b: 'queso', kind: 'creative', result: 'bolon_doble_queso',
     msg: 'Relleno otra vez, recién hecho. Invento de la casa.' },
@@ -181,178 +181,19 @@ const MISHAP_GENERIC = {
   text: (a, b) => `Mezclaste ${a} con ${b}. Quedó una masa rara que no sirve para nada; en la cocina solo estorba y con el tiempo se pudre. Mejor bótala.`,
 };
 
-/* ---------- Cuadernos ---------- */
-const CUADERNOS = {
-  bolon: {
-    dish: 'bolon',
-    title: 'El cuaderno del bolón',
-    city: 'Guayaquil', region: 'costa',
-    cost: 0,
-    accent: '#9dbd8a',
-    blurb: 'el desayuno de la abuela',
-    intro: 'La primera página huele a domingo. Es lo primero que aprendiste; con esto abre la hueca cada mañana.',
-    grants: ['cuchillo', 'pilon', 'sarten', 'verde', 'verde', 'verde', 'queso', 'queso'],
-    steps: [
-      { a: 'verde',        b: 'cuchillo', result: 'verde_pelado', tech: 'pelar',
-        hint: 'Todo empieza quitándole la cáscara al verde.',
-        line: '1. Pela 3 plátanos verdes y córtalos en rodajas gruesas. Truco: úntate las manos con aceite, que el verde mancha.' },
-      { a: 'verde_pelado', b: 'sarten',   result: 'verde_frito',  tech: 'freir',
-        hint: 'Los trozos pelados van al aceite caliente.',
-        line: '2. Fríe las rodajas en aceite caliente a fuego medio, 4–5 min, hasta que doren por fuera y ablanden por dentro.' },
-      { a: 'verde_frito',  b: 'pilon',    result: 'verde_majado', tech: 'majar',
-        hint: 'Aún caliente, se vuelve masa a golpes.',
-        line: '3. Májalos aún calientes en el pilón con una pizca de sal hasta formar una masa. (Es también la base del tigrillo.)' },
-      { a: 'verde_majado', b: 'queso',    result: 'masa_bolon',   tech: 'mezclar',
-        hint: 'A la masa le falta lo blanco y salado.',
-        line: '4. Amasa el verde con un puñado de queso fresco rallado hasta que quede pareja y se sienta el queso.' },
-      { a: 'masa_bolon',   b: 'sarten',   result: 'bolon',        tech: 'dorar',
-        hint: 'Forma la bola y dale calor.',
-        line: '5. Forma bolas del tamaño de un puño, aplánalas apenas y dóralas en la sartén con un toque de mantequilla. Sirve caliente.' },
-      { a: 'masa_bolon',   b: 'chicharron', result: 'bolon_mixto', variant: true,
-        hint: 'Hay quien le esconde chicharrón adentro.',
-        line: '✳ Bolón mixto: esconde chicharrón crujiente en el centro de cada bola antes de dorar.' },
-    ],
-  },
-
-  tigrillo: {
-    dish: 'tigrillo',
-    title: 'El cuaderno del tigrillo',
-    city: 'Manabí', region: 'costa',
-    cost: 4,
-    accent: '#e0a45c',
-    blurb: 'el hermano con huevo del bolón',
-    intro: 'Comparte casi todo con el bolón: el mismo verde majado, pero revuelto con huevo. Se vende más caro y llena más.',
-    grants: ['huevo', 'huevo', 'verde', 'verde'],
-    steps: [
-      { a: 'verde_majado',  b: 'huevo', result: 'tigrillo_base', tech: 'revolver',
-        hint: 'Al mismo majado del bolón, un huevo.',
-        line: '1. En la sartén con el verde majado, casca 2 huevos y revuelve a fuego bajo hasta que cuajen y se integren.' },
-      { a: 'tigrillo_base', b: 'queso', result: 'tigrillo',
-        hint: 'Corónalo con queso y a servir.',
-        line: '2. Agrega queso fresco en trozos y revuelve hasta que se funda. Sirve bien caliente con café pasado.' },
-      { a: 'tigrillo_base', b: 'chicharron', result: 'tigrillo_mixto', variant: true,
-        hint: 'Con chicharrón se vuelve fiesta.',
-        line: '✳ Tigrillo mixto: incorpora chicharrón desmenuzado junto con el queso.' },
-    ],
-  },
-
-  encebollado: {
-    dish: 'encebollado',
-    title: 'El levantamuertos',
-    city: 'Guayaquil', region: 'costa',
-    cost: 10,
-    accent: '#93a7c4',
-    blurb: 'para amanecer el puerto',
-    intro: 'Estas páginas saben a madrugada de puerto. La receta está regada en pedazos, como después de una noche larga.',
-    grants: ['cebolla', 'limon', 'yuca', 'pescado'],
-    steps: [
-      { a: 'cebolla',          b: 'limon',       result: 'curtido', tech: 'curtir',
-        hint: 'La cebolla en pluma pide un baño ácido.',
-        line: '1. Corta 1 cebolla paiteña en pluma fina. Lávala y cúrtela con el jugo de 2 limones y sal. Reserva.' },
-      { a: 'pescado',          b: 'cuchillo',    result: 'pescado_limpio', tech: 'limpiar',
-        hint: 'El pescado llega entero; hay que limpiarlo.',
-        line: '2. Limpia el pescado (albacora o atún fresco): quítale escamas, piel y espinas.' },
-      { a: 'yuca',             b: 'olla',        result: 'yuca_cocida',
-        hint: 'La yuca va aparte, al agua.',
-        line: '3. Cocina la yuca en agua con sal 20 min, hasta que esté tierna. Escúrrela y trocéala.' },
-      { a: 'pescado_limpio',   b: 'olla',        result: 'caldo_pescado',
-        hint: 'Del pescado limpio sale el caldo.',
-        line: '4. Hierve el pescado con cebolla, tomate, comino y cilantro. Cuela y desmenuza el pescado.' },
-      { a: 'caldo_pescado',    b: 'yuca_cocida', result: 'base_encebollado', tech: 'mezclar',
-        hint: 'Une el mar con la tierra.',
-        line: '5. Junta el caldo colado con la yuca y el pescado desmenuzado. Ajusta la sal.' },
-      { a: 'base_encebollado', b: 'curtido',     result: 'encebollado',
-        hint: 'Corónalo con el curtido y a servir.',
-        line: '6. Sírvelo bien caliente, coronado con el curtido de cebolla, cilantro y un chorrito de limón. Va con chifles.' },
-    ],
-  },
-
-  humita: {
-    dish: 'humita',
-    title: 'Tardes de choclo',
-    city: 'Cuenca', region: 'sierra',
-    cost: 8,
-    accent: '#e0b45c',
-    blurb: 'huele a domingo en la sierra',
-    intro: 'Un cuaderno de letra fina, con manchas de café. El molino de esta casa se vendió hace años; la lona tiene uno.',
-    grants: ['maiz', 'maiz', 'hoja'],
-    steps: [
-      { a: 'maiz',            b: 'molino', result: 'maiz_preparado', tech: 'moler',
-        hint: 'El choclo tierno pasa por la manivela.',
-        shopNote: 'El molino se compra en la lona, sección utensilios.',
-        line: 'Muele el choclo tierno hasta obtener una masa.' },
-      { a: 'maiz_preparado',  b: 'queso',  result: 'mezcla_humita',
-        hint: 'A la masa de choclo, queso.',
-        line: 'Mezcla la masa de choclo con queso, manteca y un toque de sal.' },
-      { a: 'mezcla_humita',   b: 'hoja',   result: 'humita_envuelta', tech: 'envolver',
-        hint: 'Cada humita va en su hoja.',
-        line: 'Coloca la mezcla en la hoja de choclo y envuélvela bien.' },
-      { a: 'humita_envuelta', b: 'olla',   result: 'humita', tech: 'hervir',
-        hint: 'Al vapor, con paciencia.',
-        line: 'Cocina las humitas al vapor unos 40 minutos.' },
-    ],
-  },
-
-  llapingacho: {
-    dish: 'llapingacho',
-    title: 'La plancha de Ambato',
-    city: 'Ambato', region: 'sierra',
-    cost: 8,
-    accent: '#d9a0b0',
-    blurb: 'doraditas, con corazón de queso',
-    intro: 'Páginas brillosas de manteca. Quien escribió esto atendía una plancha en el mercado y no terminaba las frases.',
-    grants: ['papa', 'papa'],
-    steps: [
-      { a: 'papa',             b: 'olla',   result: 'papa_cocida', tech: 'hervir',
-        hint: 'La papa, primero al agua.',
-        line: 'Cocina las papas en agua con sal hasta que ablanden.' },
-      { a: 'papa_cocida',      b: 'queso',  result: 'masa_llapingacho', tech: 'majar',
-        hint: 'Papa y queso hacen la masa.',
-        line: 'Maja las papas y mézclalas con queso para la masa.' },
-      { a: 'masa_llapingacho', b: 'sarten', result: 'llapingacho', tech: 'dorar',
-        hint: 'Forma tortillas y a la plancha.',
-        line: 'Forma tortillas rellenas de queso y dóralas en la plancha.' },
-    ],
-  },
-
-  fanesca: {
-    dish: 'fanesca',
-    title: 'El cuaderno de Semana Santa',
-    city: 'Quito', region: 'sierra',
-    cost: 15,
-    accent: '#c98a5b',
-    blurb: 'doce granos, una vez al año',
-    intro: 'El cuaderno más gastado de todos. Se abre una vez al año y toda la familia cabe en esta receta.',
-    grants: ['granos_mixtos', 'leche', 'zapallo'],
-    steps: [
-      { a: 'granos_mixtos', b: 'olla',    result: 'base_espesa', tech: 'hervir',
-        hint: 'Los doce granos, cocidos con paciencia.',
-        line: 'Cocina los granos y júntalos en una base espesa.' },
-      { a: 'base_espesa',   b: 'leche',   result: 'crema_base', tech: 'mezclar',
-        hint: 'Suavízala con leche.',
-        line: 'Agrega leche y crema hasta suavizar la base.' },
-      { a: 'crema_base',    b: 'zapallo', result: 'base_fanesca',
-        hint: 'El zapallo la espesa y endulza.',
-        line: 'Incorpora el zapallo cocido para dar cuerpo y dulzor.' },
-      { a: 'base_fanesca',  b: 'bacalao', result: 'fanesca',
-        hint: 'Falta el bacalao remojado. Búscalo en la lona.',
-        line: 'Añade el bacalao desalado y sirve con sus acompañantes.' },
-    ],
-  },
-};
-
-const CUADERNO_ORDER = ['bolon', 'tigrillo', 'encebollado', 'humita', 'llapingacho', 'fanesca'];
+/* ---------- Cuadernos ----------
+   El contenido de recetas vive en recetario.js (GAME_DATA, esquema
+   del GDD). buildRecetario() llena estas estructuras al cargar. */
+const CUADERNOS = {};
+const CUADERNO_ORDER = [];
 
 /* ---------- Huecas por región ----------
    Empiezas en la costa; la sierra se abre cuando la costa camina. */
 const REGIONS = {
-  costa:  { name: 'Hueca costeña', short: 'Costa', accent: '#e0a45c',
-            tagline: 'verde, mar y sartén caliente' },
-  sierra: { name: 'Hueca serrana', short: 'Sierra', accent: '#9a86b0',
-            tagline: 'choclo, papa y olla lenta',
-            unlock: { dishes: 2 } },   /* se abre al dominar 2 platos de la costa */
+  costa: { name: 'La hueca de la abuela', short: 'Costa', accent: '#9dbd8a',
+           tagline: 'verde, queso y madrugada' },
 };
-const REGION_ORDER = ['costa', 'sierra'];
+const REGION_ORDER = ['costa'];
 
 /* ---------- La hueca: clientes y arriendo ---------- */
 const CLIENTES = [
@@ -384,37 +225,25 @@ const CLIENTES = [
 
 const HUECA = {
   startRating: 5, maxRating: 10,
-  queueMax: 3,               /* clientes esperando a la vez, estilo cola */
-  tipMax: 2,
-  /* siempre llegan clientes; el ritmo sube con los platos que dominas */
+  queueMax: 3,               /* clientes esperando a la vez */
+  tipMax: 200,
   pressure: [
-    { dishes: 1, spawnMs: 9000,  patience: 70 },
-    { dishes: 2, spawnMs: 7000,  patience: 60 },
-    { dishes: 4, spawnMs: 5500,  patience: 52 },
+    { dishes: 1, spawnMs: 11000, patience: 80 },
+    { dishes: 2, spawnMs: 8500,  patience: 70 },
+    { dishes: 3, spawnMs: 7000,  patience: 62 },
   ],
-  /* arriendo cada N clientes, y SUBE cada vez: el bolón solo no alcanza */
-  rentEvery: 6,
-  rentBase: 10, rentStep: 6,   /* ciclo 0:10, 1:16, 2:22, 3:28… */
-  /* la clientela pide más los platos que más te piden de fama:
-     al inicio casi todos quieren lo barato; con fama piden lo caro */
+  /* GDD §8: sin arriendo ni crisis en esta fase (el sistema queda dormido) */
+  rentEvery: 999999,
+  rentBase: 1000, rentStep: 600,
   richPref: 0.5,
 };
 
 /* La autoridad de salubridad: 3 clientes seguidos sin servir
    y viene a revisar. Sin comida lista → clausura. */
-const SALUBRIDAD = { missLimit: 3 };
+const SALUBRIDAD = { missLimit: 9999 };  /* dormida en el MVP */
 
 /* Metas de largo plazo: la hueca nunca "se acaba". */
-const MILESTONES = [
-  { served: 10, title: 'Hueca de barrio',      reward: 5,
-    note: 'Ya te conocen en la cuadra. Los taxistas recomiendan.' },
-  { served: 25, title: 'Hueca famosa',         reward: 10,
-    note: 'Vienen desde el otro lado del río. Hay fila los domingos.' },
-  { served: 50, title: 'Leyenda de la ciudad', reward: 20,
-    note: 'Salió en el periódico. La Delfina estaría orgullosa.' },
-  { served: 100, title: 'Patrimonio del sabor', reward: 50,
-    note: 'Cien platos servidos. Esto ya es historia nacional.' },
-];
+const MILESTONES = [];   /* GDD §8: metas de largo plazo, fase futura */
 
 /* ---------- Comensales de historia (empujan el progreso) ----------
    Al llegar a `after` clientes servidos, aparece esta visita pidiendo un
@@ -423,28 +252,45 @@ const MILESTONES = [
    guía natural: te dice qué aprender para seguir creciendo.
    Inspiración: los VIP de Diner Dash y los pedidos especiales de Stardew. */
 const VISITAS = [
-  { after: 3, name: 'Don Segundo', icon: 'cliente_jacinto', dish: 'bolon_mixto',
-    ask: 'A la Delfina yo le compraba cada domingo su bolón MIXTO, con su chicharroncito escondido adentro. ¿Me haces uno igualito, hijo? Aquí te espero, sin apuro.',
-    hintTo: 'El bolón mixto lleva chicharrón: cómpralo en la lona y escóndelo en la masa antes de dorar.',
-    reward: 15,
-    beat: 'Don Segundo muerde y se le aguan los ojos. «Ese crocante… es igualito al de la Delfina.» Sale contando a todo el barrio que la hueca volvió a abrir.' },
-  { after: 10, name: 'Doña Carmen', icon: 'cliente_rosa', dish: 'tigrillo',
-    ask: '¿Y no me tienes un tigrillito, mija? Con lo mismo del bolón pero revuelto con huevo, como lo hacía tu abuela. No me muevo de aquí hasta probarlo… y que nadie me apure.',
-    hintTo: 'El tigrillo se aprende con su cuaderno (en la lona): el mismo verde majado, pero revuelto con huevo.',
-    reward: 25,
-    beat: '«¡Ese es el tigrillo de la Delfina!» Doña Carmen se limpia una lágrima y jura traer a toda su comadrería. Tu fama sube fuerte.' },
-  { after: 20, name: 'Aníbal, el chofer', icon: 'cliente_chofer', dish: 'encebollado',
-    ask: 'Casera, la noche fue larga y el cuerpo pide encebollado. Aquí me quedo en la banca hasta que salga uno que levante muertos.',
-    hintTo: 'El levantamuertos (encebollado) se aprende con su cuaderno de la lona.',
-    reward: 40,
-    beat: 'Aníbal resucita al primer sorbo. «Este puerto ya tiene su levantamuertos.» Ahora te manda a todos los choferes de la línea.' },
+  { after: 2, name: 'Don Segundo', icon: 'cliente_jacinto', dish: 'bolon_mixto',
+    unlocks: 'bolon_mixto',
+    ask: 'Tú debes ser la sangre de la Delfina. Yo venía cada domingo por su MIXTO: bolón con huevo frito encima y café pasado. Aquí me siento, sin apuro… mientras, te converso.',
+    hintTo: 'Se abrió una página nueva del cuaderno: “Bolón mixto”. Te faltará huevo y café — la canasta del mercado está a la derecha.',
+    reward: 800,
+    memorias: [
+      '«Tu abuela pasaba el café con chuspa, nada de máquinas. Decía que el apuro le quita el dulce.»',
+      '«Una vez llovió tan fuerte que el barrio entero desayunó aquí, apretado y feliz. Nadie pagó ese día.»',
+      '«Ella no regalaba las recetas, ¿sabes? Decía que había cosas que solo se aprenden con las manos.»',
+    ],
+    beat: 'Don Segundo prueba, cierra los ojos y se queda callado un rato. «Igualito. Igualito a los domingos.» Deja los billetes bajo el plato y sale despacito, sonriendo.' },
+  { after: 7, name: 'Doña Carmen', icon: 'cliente_rosa', dish: 'tigrillo',
+    unlocks: 'tigrillo',
+    ask: '¿Y no me tienes un tigrillito, mija? Tu abuela lo aprendió de mi comadre de Zaruma: la misma masa del bolón, pero revuelta con huevo. Aquí espero, no me corras.',
+    hintTo: 'Nueva página del cuaderno: “Tigrillo”. Usa la misma masa de verde del bolón.',
+    reward: 1000,
+    memorias: [
+      '«La Delfina y yo nos peleamos una vez por este plato. Dos días sin hablarnos… nos contentamos comiéndolo.»',
+      '«Si te sale bien, vas a oler exactamente su cocina. Vas a ver que sí.»',
+    ],
+    beat: '«¡Ese es! ¡Ese es el olor!» Doña Carmen se ríe y llora al mismo tiempo. Se lleva la mitad envuelta “para enseñársela a la Delfina cuando la visite”.' },
+];
+
+/* ---------- Beats narrativos (motor de temporadas, GDD §2.3) ----------
+   Momentos guionizados declarativos: el motor los evalúa en orden y
+   muestra el primero pendiente cuya condición se cumpla. Agregar
+   temporadas = agregar filas, no código. */
+const BEATS = [
+  { id: 'voz', minServed: 1, icon: 'corazon', title: '¡Corrió la voz!',
+    text: '«¡Volvió a abrir la hueca de doña Delfina!» El primer vecino salió contento y ya se lo cuenta a medio barrio. Empiezan a asomarse más caras.' },
+  { id: 'cierre', recipesComplete: true, icon: 'cuaderno', title: 'Las primeras páginas a color',
+    text: 'Guardas el cuaderno. Entre tanto boceto en blanco y negro, ya hay páginas que respiran color — las tuyas. La abuela querrá verlas cuando la visites. Continúa en la temporada completa…' },
 ];
 
 /* ---------- Economía ---------- */
-const REWARDS = { step: 2, technique: 1, dish: 6, dishVariant: 4, dishMeta: 12, creative: 3 };
-const REVEAL_COST = 2;
-const INITIAL_COINS = 10;
-const RESCUE_COINS = 3;
+const REWARDS = { step: 100, technique: 50, dish: 500, dishVariant: 300, dishMeta: 800, creative: 200 };
+const REVEAL_COST = 200;
+const INITIAL_COINS = 2000;
+const RESCUE_COINS = 500;
 
 /* ---------- Microcopy ---------- */
 const MICROCOPY = {

@@ -3,7 +3,7 @@
    app.js — La hueca abierta: cola continua, servir, sobrevivir.
    ============================================================ */
 
-const SAVE_KEY = 'huecas_save_v7';
+const SAVE_KEY = 'huecas_save_v14';
 
 /* ---------- Recetario aplanado + reglas ---------- */
 
@@ -21,7 +21,7 @@ const isDish = (id) => ITEMS[id].type === 'dish';
 const isDone = (id) => ['dish', 'junk'].includes(ITEMS[id].type);
 const isHeat = (id) => id === 'olla' || id === 'sarten';
 
-const S = (n) => String(n * 1000).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const S = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 /* ---------- Estado ---------- */
 
@@ -30,7 +30,7 @@ let state = null;
 function newState() {
   const s = {
     coins: INITIAL_COINS,
-    owned: ['bolon'],
+    owned: [CUADERNO_ORDER[0]],
     inv: {},
     tools: [],
     toolWear: {},
@@ -38,7 +38,7 @@ function newState() {
     techniques: [],
     revealed: [],
     dishesDone: [],
-    active: 'bolon',
+    active: CUADERNO_ORDER[0],
     region: 'costa',
     regionsUnlocked: ['costa'],
     rating: HUECA.startRating,
@@ -55,10 +55,11 @@ function newState() {
     visitaIdx: 0,        /* próxima visita de historia por llegar */
     muted: false,        /* silenciar sonido */
     tutDone: false,      /* guía inicial completada (primer plato servido) */
-    beatVoz: false,      /* mostrado el momento "corrió la voz" */
+    beatsSeen: [],       /* beats narrativos ya mostrados (motor de temporadas) */
+    colored: [],         /* GDD §3.2: ids que ya pasaron de boceto a color */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
-  grantBasket(s, CUADERNOS.bolon.grants);
+  grantBasket(s, CUADERNOS[CUADERNO_ORDER[0]].grants);
   return s;
 }
 
@@ -219,6 +220,49 @@ function toggleSound() {
   if (!state.muted) { initAudio(); sfx('tab'); }
 }
 
+/* ============================================================
+   BOCETO → COLOR (GDD §3.2) — la mecánica visual del descubrimiento.
+   Lo no descubierto se dibuja en boceto B/N; al completar un paso,
+   técnica o receta, el elemento se "pinta" con un relleno progresivo.
+   ============================================================ */
+const recentColored = new Set();
+function isColored(id) { return state.colored.includes(id); }
+function colorize(ids) {
+  let any = false;
+  ids.filter(Boolean).forEach(id => {
+    if (!state.colored.includes(id)) {
+      state.colored.push(id);
+      recentColored.add(id);
+      setTimeout(() => recentColored.delete(id), 2400);
+      any = true;
+    }
+  });
+  return any;
+}
+/* aplica el estado visual a un nodo que contiene un icono */
+function inkState(node, id) {
+  if (isColored(id)) { if (recentColored.has(id)) node.classList.add('paint-in'); }
+  else node.classList.add('boceto');
+  return node;
+}
+
+/* ---------- Beats narrativos declarativos (motor de temporadas) ---------- */
+function beatReady(b) {
+  if (state.beatsSeen.includes(b.id)) return false;
+  if (b.minServed != null && state.served < b.minServed) return false;
+  if (b.recipesComplete && !CUADERNO_ORDER.every(cid => isComplete(cid))) return false;
+  return true;
+}
+function checkBeats() {
+  const b = BEATS.find(beatReady);
+  if (!b) return false;
+  state.beatsSeen.push(b.id);
+  if (b.id === 'voz') state.rating = Math.min(HUECA.maxRating, state.rating + 1);
+  save();
+  setTimeout(() => { if (!modalOpen()) showBeat(b.icon, b.title, b.text); }, 850);
+  return true;
+}
+
 /* ---------- Navegación ---------- */
 
 const SCREENS = ['cover', 'shelf', 'receta', 'cocina', 'mercado'];
@@ -230,9 +274,9 @@ function show(screen) {
   SCREENS.forEach(s => $('#screen-' + s).classList.toggle('active', s === screen));
   const inGame = screen !== 'cover';
   $('#hud').classList.toggle('hidden', !inGame);
-  $('#tabbar').classList.toggle('hidden', !inGame);
-  const tabOf = { shelf: 'shelf', receta: 'shelf', cocina: 'cocina', mercado: 'mercado' };
-  $$('#tabbar .tab-btn').forEach(b => b.classList.toggle('current', b.dataset.screen === tabOf[screen]));
+  /* botones flotantes: canasta + cuaderno solo en la cocina (GDD §4.2) */
+  $('#float-nav').classList.toggle('hidden', screen !== 'cocina');
+  $('#float-back').classList.toggle('hidden', !inGame || screen === 'cocina');
   if (screen === 'shelf') renderShelf();
   if (screen === 'receta') renderReceta();
   if (screen === 'cocina') renderCocina();
@@ -417,14 +461,11 @@ function serveCustomer(id) {
   bumpHearts(1);
   sfx('serve'); bumpCombo();
   if (at) { burst(at.x, at.y); flyCoins(at.x, at.y, Math.ceil(pay / 6)); }
+  colorize([c.icon]);                       /* el barrio recobra color, vecino a vecino */
   const gracias = c.thanks || MICROCOPY.servedQueue;
   toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
-  /* beat: al primer plato servido, corre la voz por el barrio */
-  if (!state.beatVoz && state.served === 1) {
-    state.beatVoz = true; state.rating = Math.min(HUECA.maxRating, state.rating + 1); save();
-    setTimeout(() => { if (!modalOpen()) showBeat('corazon', '¡Corrió la voz!', `«¡Volvió a abrir la hueca de doña Delfina!» El primer cliente salió contento y ya se lo cuenta a medio barrio. Empiezan a asomarse más vecinos.`); }, 800);
-  }
+  checkBeats();
 }
 
 /* --- Comensal de historia: llegada, atención y recompensa --- */
@@ -432,7 +473,12 @@ function maybeVisita() {
   if (state.visitaIdx >= VISITAS.length || storyGuest()) return;
   const v = VISITAS[state.visitaIdx];
   if (state.served < v.after) return;
-  queue.unshift({ id: ++custId, story: true, name: v.name, icon: v.icon, dish: v.dish, total: 0, deadline: Infinity });
+  if (v.unlocks && !state.owned.includes(v.unlocks)) {
+    state.owned.push(v.unlocks);
+    setTimeout(() => toast(`📖 Nueva página del cuaderno: ${CUADERNOS[v.unlocks].title}`, 'seal'), 2600);
+  }
+  queue.unshift({ id: ++custId, story: true, name: v.name, icon: v.icon, dish: v.dish, total: 0, deadline: Infinity,
+                  memorias: v.memorias ? [...v.memorias] : [] });
   lastSpawn = Date.now();
   buzz([50, 40, 50]);
   toast(`★ Llegó ${v.name}: pide ${ITEMS[v.dish].name} y no se irá sin él.`, 'seal');
@@ -489,7 +535,7 @@ function afterResolve(missed) {
   if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 800);
 }
 
-function customerPay(dish) { return ITEMS[dish].sell + Math.floor(state.rating / 4); }
+function customerPay(dish) { return ITEMS[dish].sell + Math.floor(state.rating / 4) * 100; }
 
 /* ---------- Regiones ---------- */
 
@@ -677,7 +723,7 @@ function renderShelf() {
   $('#shelf-recipes').textContent = `${done}/${CUADERNO_ORDER.length}`;
   $('#shelf-served').textContent = state.served;
   const next = MILESTONES.find(m => !state.milestonesHit.includes(m.served));
-  $('#shelf-goal').textContent = next ? `Próxima meta: ${next.title} (${state.served}/${next.served})` : '¡Patrimonio del sabor!';
+  $('#shelf-goal').textContent = next ? `Próxima meta: ${next.title} (${state.served}/${next.served})` : `${state.served} platos servidos · el barrio recuerda`;
 }
 
 function bookCard(cid) {
@@ -689,16 +735,24 @@ function bookCard(cid) {
   book.type = 'button';
   book.style.setProperty('--accent', c.accent);
   book.innerHTML = owned ? `
-    <span class="book-icon">${iconOf(done ? c.dish : 'cuaderno')}</span>
+    <span class="book-icon${isColored(c.dish) ? '' : ' boceto'}">${iconOf(done ? c.dish : 'cuaderno')}</span>
     <span class="book-title">${c.title}</span>
     <span class="book-city">${c.city}</span>
-    <span class="book-progress">${done ? '<span class="stamp-mini">completo ★</span>' : '<span class="dots">' + '●'.repeat(stepsDone(cid)) + '○'.repeat(total - stepsDone(cid)) + '</span>'}</span>
-  ` : `
+    <span class="book-progress">${done ? '<span class="stamp-mini">a color ★</span>' : '<span class="dots">' + '●'.repeat(stepsDone(cid)) + '○'.repeat(total - stepsDone(cid)) + '</span>'}</span>
+  ` : c.storyUnlock ? `
+    <span class="book-icon dim boceto">${iconOf(c.dish)}</span>
+    <span class="book-title">¿ … ?</span>
+    <span class="book-city">${c.city}</span>
+    <span class="book-progress"><span class="book-locked hand">página en boceto</span></span>` : `
     <span class="book-icon dim">${iconOf('cuaderno')}</span>
     <span class="book-title">¿${c.title}?</span>
     <span class="book-city">${c.city}</span>
     <span class="book-progress"><span class="price-tag">S/ ${S(c.cost)}</span></span>`;
-  book.addEventListener('click', () => { if (owned) openReceta(cid); else { show('mercado'); toast('Ese cuaderno se consigue en la lona.', 'soft'); } });
+  book.addEventListener('click', () => {
+    if (owned) openReceta(cid);
+    else if (c.storyUnlock) toast('La abuela escribió esta página… alguien del barrio la despertará.', 'soft');
+    else { show('mercado'); toast('Ese cuaderno se consigue en la lona.', 'soft'); }
+  });
   return book;
 }
 
@@ -718,8 +772,12 @@ function renderReceta() {
   const complete = isComplete(cid);
   $('#receta-title').textContent = c.title;
   $('#receta-city').textContent = `${c.city} · ${REGIONS[c.region].short}`;
-  $('#receta-dish-icon').innerHTML = iconOf(complete ? c.dish : 'cuaderno');
+  const dIcon = $('#receta-dish-icon');
+  dIcon.innerHTML = iconOf(c.dish);
+  dIcon.classList.toggle('boceto', !isColored(c.dish));
   $('#receta-intro').textContent = c.intro;
+  const cult = $('#receta-cultural');
+  if (cult) { cult.textContent = complete && c.cultural ? c.cultural : ''; cult.style.display = complete && c.cultural ? '' : 'none'; }
   $('#receta-stamp').style.display = complete ? '' : 'none';
   const list = $('#receta-steps');
   list.innerHTML = '';
@@ -827,6 +885,7 @@ function renderQueue() {
       <span class="cl-name">${c.name}</span>
       <div class="cl-bar-wrap"><span class="cl-bar" style="transform:scaleX(${frac})"></span></div>
       <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;
+    inkState(card.querySelector('.cl-avatar'), c.icon);
     card.querySelector('.cl-serve').addEventListener('click', () => serveCustomer(c.id));
     row.appendChild(card);
   }
@@ -856,6 +915,7 @@ function itemCard(id) {
   card.type = 'button'; card.dataset.id = id;
   card.innerHTML = `<span class="icon">${iconOf(id)}</span><span class="name">${item.name}</span>`;
   card.setAttribute('aria-label', `${item.name}, ${TYPES[item.type].label}`);
+  inkState(card, id);                       /* boceto hasta descubrirse (GDD §3.2) */
   return card;
 }
 
@@ -1136,6 +1196,12 @@ function performCook(x, y) {
 
   if (act.good) {
     consume(); addItem(act.result, 1);
+    colorize([x, y, act.source && act.source.tech, act.result]);   /* GDD §3.2 */
+    const guest = storyGuest();
+    if (guest && guest.memorias && guest.memorias.length) {
+      const linea = guest.memorias.shift();
+      setTimeout(() => toast(linea, 'ink'), 1400);
+    }
     surface.classList.add('success'); buzz([30, 40, 60]); sfx('cook');
     const p = centerOf('#cocina-surface'); if (p) burst(p.x, p.y - 10, ['#e0b45c', '#9dbd8a', '#fff3d0']);
     setTimeout(() => {
@@ -1194,6 +1260,7 @@ function discover(id, source, kind) {
   sfx(item.type === 'dish' ? 'win' : 'coin');
   const p = centerOf('#cocina-surface'); if (p && reward) flyCoins(p.x, p.y, Math.ceil(reward / 6));
   if (item.type === 'dish') {
+    colorize([id]);
     if (!state.dishesDone.includes(id)) state.dishesDone.push(id);
     state.firstDishPending = wasFirstDish;
     save(); maybeUnlockRegion();
@@ -1232,6 +1299,7 @@ function showCelebration(id, source, reward, kind) {
   $('#modal-celebra').classList.add('open');
 }
 function closeCelebration() {
+  setTimeout(checkBeats, 300);
   $('#modal-celebra').classList.remove('open');
   if (state.firstDishPending) { state.firstDishPending = false; save(); toast(MICROCOPY.firstDish, 'seal'); lastSpawn = Date.now(); }
   if (celebratedCuaderno) openReceta(celebratedCuaderno); else show('cocina');
@@ -1243,7 +1311,7 @@ function closeCelebration() {
 
 function renderMercado() {
   const grid = $('#market-books');
-  const pendientes = REGION_ORDER.filter(r => state.regionsUnlocked.includes(r)).flatMap(regionCuadernos).filter(cid => !owns(cid));
+  const pendientes = REGION_ORDER.filter(r => state.regionsUnlocked.includes(r)).flatMap(regionCuadernos).filter(cid => !owns(cid) && !CUADERNOS[cid].storyUnlock);
   $('#market-books-section').style.display = pendientes.length ? '' : 'none';
   grid.innerHTML = '';
   pendientes.forEach(cid => {
@@ -1350,7 +1418,7 @@ function closeCarta() {
   save();
   $('#modal-carta').classList.remove('open');
   /* primera vez: te muestra la receta del bolón con el botón Intentar */
-  if (!state.seenIntro) { state.seenIntro = true; save(); openReceta('bolon'); }
+  if (!state.seenIntro) { state.seenIntro = true; save(); openReceta(CUADERNO_ORDER[0]); }
   else show('cocina');
 }
 
@@ -1382,7 +1450,9 @@ function bindEvents() {
   $('#carta-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') closeCarta(); });
   $('#cover-fs').addEventListener('click', toggleFullscreen);
   $('#hud-sound').addEventListener('click', toggleSound);
-  $$('#tabbar .tab-btn').forEach(b => b.addEventListener('click', () => show(b.dataset.screen)));
+  $('#fab-mercado').addEventListener('click', () => { sfx('tab'); show('mercado'); });
+  $('#fab-cuaderno').addEventListener('click', () => { sfx('tab'); show('shelf'); });
+  $('#float-back').addEventListener('click', () => { sfx('tab'); show(currentScreen === 'receta' ? 'shelf' : 'cocina'); });
   $('#receta-back').addEventListener('click', () => show('shelf'));
   $('#hud-mode').addEventListener('click', toggleMode);
   $('#quick-cocina').addEventListener('click', () => show('cocina'));
