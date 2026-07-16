@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-  <title>Huecas — saberes y sabores</title>
+  <title>Huecas — El recetario de la abuela</title>
   <meta name="description" content="Heredaste una hueca en el Ecuador del 2000. Descubre recetas, atiende la cola y paga el arriendo.">
   <!-- App instalable a pantalla completa (iOS y Android) -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -20,6 +20,9 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wobble"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.6"/></filter>
+</svg>
 <div id="stage">
 
   <!-- HUD -->
@@ -39,11 +42,11 @@
       <div class="cover">
         <p class="cover-over">Ecuador · año 2000</p>
         <h1>Huecas</h1>
-        <p class="cover-sub">saberes y sabores</p>
+        <p class="cover-sub">el recetario de la abuela</p>
         <div class="cover-icons" aria-hidden="true">
-          <span data-icon="bolon"></span><span data-icon="tigrillo"></span><span data-icon="encebollado"></span>
+          <span data-icon="bolon"></span><span data-icon="bolon_huevo"></span><span data-icon="tigrillo"></span>
         </div>
-        <p class="cover-quote">La hueca era de tu abuela. Te dejó el fogón, un recetario a medio llenar y el olor a verde en las paredes. La cuadra tiene hambre y el arriendo no perdona: cocina, atiende la cola y aprende a subsistir.</p>
+        <p class="cover-quote">Tu abuela ha enfermado y te encarga su hueca. Te deja un cuaderno de recetas escrito en acertijos, dibujado a mano — casi todo en blanco y negro. Cocina, descífralo, y devuélvele el color plato por plato.</p>
         <div class="cover-actions">
           <button type="button" id="btn-continue" class="btn-main">Continuar</button>
           <button type="button" id="btn-new" class="btn-ghost">Abrir la hueca</button>
@@ -98,7 +101,7 @@
       <p id="shelf-goal" class="shelf-goal hand"></p>
     </header>
     <div id="shelf-books" class="shelf-books"></div>
-    <p class="page-footnote">Toca un cuaderno para ver su receta. Los que faltan se compran en la lona.</p>
+    <p class="page-footnote">Toca una página para leerla. Las que siguen en boceto, el barrio las irá despertando.</p>
   </main>
 
   <!-- ================= Receta ================= -->
@@ -116,6 +119,7 @@
       <p id="receta-intro" class="receta-intro"></p>
       <p id="receta-progress" class="receta-progress hand"></p>
       <div id="receta-steps" class="receta-steps"></div>
+      <p id="receta-cultural" class="receta-cultural"></p>
       <button type="button" id="receta-cook-btn" class="btn-main wide">Intentarlo en la mesa →</button>
     </div>
   </main>
@@ -171,9 +175,9 @@
         <span class="carta-stamp" aria-hidden="true">Guayaquil, años 90</span>
         <h3 id="carta-title" class="carta-title">De tu abuela Delfina</h3>
         <div class="carta-body">
-          <p>Mi niño, mi niña: ya ves que el cuerpo no me da. Te encargo lo que más quiero en el mundo: mi hueca.</p>
-          <p>En el cuaderno está todo… pero lo escribí <b>en acertijos</b>, una manía de vieja para que nadie me copiara. Lo vas a descifrar <b>cocinando</b>, como aprendí yo.</p>
-          <p>Tienes verde y queso, como pide la primera página. Empieza por ahí. El barrio se acuerda de mi sazón; no los hagas esperar mucho.</p>
+          <p>Mi niño, mi niña: los médicos dicen que mi cabeza va a empezar a olvidar. Antes de que olvide quién soy, quiero que te quedes con lo que más quiero: mi hueca.</p>
+          <p>Te dejo mi cuaderno. Está escrito <b>en acertijos</b> — dirán que es manía de vieja para que no me copien. Tú descífralo <b>cocinando</b>, que así se guardan mejor las cosas.</p>
+          <p>Encontrarás verde y queso en la mesa, como pide la primera página. El barrio se acuerda de mi sazón; no los hagas esperar.</p>
           <p>Ahora es tuya. Ponle nombre.</p>
         </div>
         <p class="carta-firma">— tu abuela Delfina 🌺</p>
@@ -294,24 +298,23 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  <nav id="tabbar" class="tabbar hidden" aria-label="Navegación">
-    <button type="button" class="tab-btn" data-screen="mercado" aria-label="La lona del mercado">
-      <span class="tab-disc"><span class="tab-icon" data-icon="tab_mercado"></span></span>
-      <span class="tab-label">Lona</span>
+  <!-- Navegación flotante contextual (GDD §4.2): objetos del cuaderno -->
+  <div id="float-nav" class="float-nav hidden">
+    <button type="button" id="fab-mercado" class="fab fab-main" aria-label="Ir al mercado">
+      <span class="fab-icon" data-icon="tab_mercado"></span>
+      <span class="fab-tag hand">mercado</span>
     </button>
-    <button type="button" class="tab-btn primary" data-screen="cocina" aria-label="La cocina">
-      <span class="tab-disc"><span class="tab-icon" data-icon="tab_cocina"></span></span>
-      <span class="tab-label">Cocina</span>
+    <button type="button" id="fab-cuaderno" class="fab fab-mini" aria-label="Abrir el cuaderno de recetas">
+      <span class="fab-icon" data-icon="cuaderno"></span>
+      <span class="fab-tag hand">cuaderno</span>
     </button>
-    <button type="button" class="tab-btn" data-screen="shelf" aria-label="El recetario">
-      <span class="tab-disc"><span class="tab-icon" data-icon="tab_libros"></span></span>
-      <span class="tab-label">Recetario</span>
-    </button>
-  </nav>
+  </div>
+  <button type="button" id="float-back" class="float-back hidden" aria-label="Volver">↩</button>
 
 </div>
   <script src="icons.js"></script>
   <script src="data.js"></script>
+  <script src="recetario.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

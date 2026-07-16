@@ -1,12 +1,50 @@
-# Huecas — saberes y sabores
+# Huecas — El recetario de la abuela
 
-Juego web cozy: heredaste una **hueca** en el Ecuador del año 2000 (sí, se
-paga en **sucres**) y un recetario incompleto. Recuperas recetas
-experimentando, cocinas con un inventario que se gasta, atiendes a la
-clientela del barrio y pagas el arriendo. Estética de cuaderno de bocetos
-con ilustraciones chubby propias (SVG inline, sin dependencias).
+**MVP de validación (motor + 3 recetas)** según el Game Design Document 2.0.
+
+Tu abuela Delfina ha enfermado y te encarga su hueca en el Ecuador de los 90,
+junto con su cuaderno de recetas escrito **en acertijos** y dibujado a mano.
+El mundo empieza en **boceto blanco y negro**: cada paso que descifras
+cocinando le devuelve el **color** (acuarela) a ingredientes, técnicas y
+páginas — plato por plato.
 
 Jugable en: https://franciscombp.github.io/Huecas/
+
+## Arquitectura del motor (GDD §2)
+
+**Todo el contenido vive en datos, no en código.** `recetario.js` contiene
+`GAME_DATA` (esquema JSON del GDD: recetas → pasos → acertijo/acción/resultado,
+ingredientes con costo de mercado, tarjetas con texto cultural) y un *adapter*
+(`buildRecetario`) que lo traduce a las estructuras del motor. Agregar la
+receta #4 o #20 es **trabajo de contenido**, no de reingeniería.
+
+| Archivo | Rol |
+|---|---|
+| `recetario.js` | CONTENIDO: GAME_DATA (JSON del GDD) + adapter agnóstico |
+| `data.js` | Tablas del motor: reglas, percances, clientes, visitas, BEATS narrativos |
+| `app.js` | Motor: combinación, boceto→color, cola, beats, mercado |
+| `icons.js` | Ilustraciones chubby SVG inline |
+| `index.html` / `styles.css` | Página de recetario editorial ilustrado |
+
+## Los tres beats del MVP (GDD §5)
+
+1. **La herencia** — la carta de Delfina → la receta del bolón (5 pasos
+   realistas con acertijo) → cada paso pinta de color lo que tocas → sirves
+   el primer bolón y *corre la voz*.
+2. **El comensal especial** — Don Segundo pide el bolón mixto (huevo frito y
+   café pasado); se abre la página, compras lo que falta en el mercado, y
+   mientras cocinas él comparte **memorias de la abuela**.
+3. **Cierre de muestra** — con las páginas del MVP a color, guardas el
+   cuaderno: «Continúa en la temporada completa…».
+
+Sin arriendo, sin salubridad, sin metas de largo plazo en esta fase (GDD §8):
+esos sistemas quedan dormidos en el motor, listos para la temporada completa.
+
+## Navegación (GDD §4)
+
+Sin barra de pestañas. **Botones flotantes dibujados**: la canasta (mercado)
+y el cuaderno (recetas), con borde orgánico y flotación sutil. Las monedas y
+la fama son anotaciones al margen, no HUD de videojuego.
 
 ## Cómo correrlo localmente
 
@@ -14,112 +52,5 @@ Jugable en: https://franciscombp.github.io/Huecas/
 npx serve .        # o: python3 -m http.server
 ```
 
-Escritorio (drag & drop) y móvil (tocar coloca; tocar la mesa retira).
-
-## La cocina (v13)
-
-La **cocina cabe en una pantalla, sin scroll**, y se centra en tres zonas
-grandes y legibles: arriba los **comensales** (avatares con el plato que piden
-y su paciencia), en el centro la **mesa** —la protagonista, con la ayuda
-manuscrita del cuaderno—, y abajo el estante de **platos listos** para servir.
-
-- Tocas el **➕ de la mesa** y se abre tu **despensa** (bottom sheet) con
-  ingredientes y utensilios; **lo que pide el paso brilla** y, si te falta,
-  lo **compras ahí mismo** en "En la lona · comprar" (con confirmación clara).
-- Al empezar hay **guía paso a paso**: la carta de la abuela → la receta del
-  bolón con **Intentar** → la mesa, con un *coach* que te dice qué hacer.
-- Pones dos cosas en la mesa y pulsas la acción. Mientras **no has descubierto**
-  ese paso el botón dice **“Usar”** (sin spoiler); una vez descubierto muestra
-  el verbo (Pelar, Freír, Majar…). El resultado se queda en la mesa para encadenar.
-- **Toda combinación hace algo.** Si mezclas cosas que no casan (plátano crudo
-  con queso, verde con leche…) igual se hace, pero queda una **mezcla inútil**
-  que solo estorba y **se pudre con el tiempo** si no la botas. El aviso es a
-  **pantalla completa** con lógica realista, no un snackbar.
-- Un **plato listo** se vende o se sirve desde el estante de la propia cocina.
-  Si lo vuelves a poner al fuego, **se quema**.
-
-## Huecas por región
-
-Empiezas en la **hueca costeña** con el bolón. Su hermano el **tigrillo**
-comparte la misma base (verde majado) pero lleva huevo y se vende más caro.
-Al dominar 2 platos costeños se abre la **hueca serrana** (humita, llapingacho,
-fanesca). El **arriendo sube cada mes**: con puro bolón no alcanza —hay que
-aprender platos más caros o diversificar. (Validado: el bolón solo quiebra;
-bolón + tigrillo sostiene la hueca.)
-
-## El bucle
-
-0. **Empieza suave**: solo tú, la mesa y el cuaderno del bolón. Un onboarding
-   de tres pasos explica descubrir / atender / sobrevivir.
-1. Los cuadernos dan **acertijos**, no instrucciones; cada paso tiene botón
-   **Intentar** (te lleva a la cocina) y **Espiar** (paga por ver el par exacto).
-2. En la cocina pones dos cosas en la mesa y pulsas el **botón de acción**
-   con el verbo del recetario (pelar, hervir, majar, mezclar, dorar…). El
-   **resultado se queda en la mesa** para encadenar el siguiente paso sin
-   volver a la despensa. Los pasos están redactados como un **recetario real**
-   simplificado, así que sirve también como recetario de verdad.
-   Las recetas son realistas: el verde **se pela** antes de cocerse, el
-   pescado se limpia, el choclo pasa por un **molino** que hay que comprar.
-   El **cuchillo se desafila** con el uso; el afilador cobra en la lona.
-3. **Toda combinación hace algo.** Errores con lógica realista: cocer el verde
-   con cáscara da *verde amargo*; plátano crudo con queso, *engrudo*; el limón
-   corta la leche. Lo inútil solo estorba y **se pudre** si no lo botas. El
-   aviso es a **pantalla completa**.
-4. Ser creativo paga: hay combinaciones **fuera del recetario** que
-   producen inventos vendibles (bolón doble queso, humita extra queso).
-5. Los platos listos se **venden o sirven desde la propia cocina** (pestaña
-   Listos) o cuando un cliente los pide. Servir sube tu **fama** (paga mejor,
-   con propina); dejar ir a alguien la baja. Recalentar un plato lo **quema**.
-   Los **vecinos tienen voz**: doña Rosa, Aníbal el chofer, la wawa Emilia y
-   otros llegan con su frase, agradecen a su manera cuando les sirves y
-   reclaman cuando se van con hambre.
-5b. **Comensales de historia** (`VISITAS`): tras servir cierta cantidad,
-   llega una **visita especial** que pide un plato que aún no sabes hacer
-   (el tigrillo, luego el encebollado, luego una humita serrana). Se planta
-   al frente, **congela la fila** —nadie más llega ni se va— y **espera sin
-   apuro** hasta que se lo sirvas. Al lograrlo hay recompensa y un momento
-   narrativo: es la guía natural para seguir creciendo.
-6. Cada 6 clientes, **don Aurelio pasa por el arriendo, que sube cada mes**
-   (S/ 10.000, luego 16.000, 22.000…). Con buena fama te fía una vez; sin
-   sucres y sin fama, **la hueca cierra** — pero recetas, técnicas y utensilios
-   se quedan contigo para reabrir.
-7. **La presión escala**: mientras más platos dominas, más seguido llegan
-   los clientes y menos paciencia tienen (tabla `HUECA.pressure`).
-8. **Salubridad**: si 3 clientes seguidos se van sin servir, llega la
-   autoridad. Si tienes un plato listo que mostrar, pasas; si no, **clausura**.
-   (Truco: guarda siempre un plato de reserva.)
-9. **Metas de largo plazo** (`MILESTONES`): a los 10, 25, 50 y 100 clientes
-   servidos subes de categoría (Hueca de barrio → Patrimonio del sabor) con
-   premio en sucres — la hueca nunca "se termina".
-10. **Modo tranquilo**: el botón Servicio/Tranquilo del HUD pausa la
-    clientela, el arriendo y salubridad para solo descubrir recetas con calma.
-
-Guardado en `localStorage` (`huecas_save_v7`).
-
-## Arquitectura
-
-HTML/CSS/JS vanilla, sin backend. **Todo el diseño del juego vive en
-`data.js`**, pensado como base de datos administrable:
-
-| Estructura | Qué controla |
-|---|---|
-| `ITEMS` | Cada nodo: precio de compra, precio de venta (0 = ni los chanchitos), desgaste de utensilios (`wear`, `sharpenCost`) |
-| `CUADERNOS` | Recetas canon por ciudad: pasos con acertijo (`hint`), frase manuscrita (`line`), técnica y canasta de regalo |
-| `RULES` | **La tabla extensible de condiciones**: `kind: 'fail'` (error explícito con resultado y mensaje propios) o `kind: 'creative'` (invento vendible). Se añaden filas sin tocar la lógica |
-| `CLIENTES` / `HUECA` | Vecinos que piden platos, paciencia, frecuencia, arriendo y fama |
-| `REWARDS` / precios | Toda la economía |
-
-El motor (`app.js`) resuelve cada combinación en orden:
-**paso canon → regla (invento/fallo) → sin interacción (no penaliza).**
-La combinación se dispara con el botón de acción; nunca es automática.
-
-| Archivo | Rol |
-|---|---|
-| `icons.js` | ~50 ilustraciones chubby flat con caritas (helpers `bowl`/`ball`/`face`/`head`) |
-| `data.js` | Contenido y reglas (ver arriba) |
-| `app.js` | Motor de combinación, inventario, clientes, arriendo, cierre/reapertura |
-| `index.html` / `styles.css` | Pantallas y estética de cuaderno |
-
-La economía está validada por simulación: 144 recorridos del recetario
-(órdenes de compra × fallos × espiar) terminan bien, y atender la hueca
-cubre el arriendo con fama media en todos los platos.
+Escritorio (drag & drop) y móvil (tocar coloca; el ➕ de la mesa abre la
+despensa). Guardado en `localStorage` (`huecas_save_v14`).
