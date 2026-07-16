@@ -55,6 +55,7 @@ function newState() {
     visitaIdx: 0,        /* próxima visita de historia por llegar */
     muted: false,        /* silenciar sonido */
     tutDone: false,      /* guía inicial completada (primer plato servido) */
+    beatVoz: false,      /* mostrado el momento "corrió la voz" */
     junkBorn: {},        /* id -> timestamp, para pudrir mezclas inútiles */
   };
   grantBasket(s, CUADERNOS.bolon.grants);
@@ -419,6 +420,11 @@ function serveCustomer(id) {
   const gracias = c.thanks || MICROCOPY.servedQueue;
   toast(`${gracias}${tip ? ` Propina S/ ${S(tip)}.` : ''}`, 'seal');
   afterResolve();
+  /* beat: al primer plato servido, corre la voz por el barrio */
+  if (!state.beatVoz && state.served === 1) {
+    state.beatVoz = true; state.rating = Math.min(HUECA.maxRating, state.rating + 1); save();
+    setTimeout(() => { if (!modalOpen()) showBeat('corazon', '¡Corrió la voz!', `«¡Volvió a abrir la hueca de doña Delfina!» El primer cliente salió contento y ya se lo cuenta a medio barrio. Empiezan a asomarse más vecinos.`); }, 800);
+  }
 }
 
 /* --- Comensal de historia: llegada, atención y recompensa --- */
@@ -499,6 +505,19 @@ function maybeUnlockRegion() {
   }
 }
 
+/* ---------- Momentos de historia (beats guionizados) ---------- */
+function showBeat(icon, title, text) {
+  $('#visita-icon').innerHTML = iconOf(icon);
+  $('#visita-title').textContent = title;
+  $('#visita-text').textContent = text;
+  $('#visita-want').style.display = 'none';
+  $('#visita-reward').style.display = 'none';
+  const btn = $('#visita-ok'); btn.textContent = 'Seguir';
+  btn.onclick = () => $('#modal-visita').classList.remove('open');
+  $('#modal-visita').classList.add('open');
+  sfx('win');
+}
+
 /* ---------- Visita de historia: modales ---------- */
 function showVisita(v) {
   $('#visita-icon').innerHTML = iconOf(v.icon);
@@ -573,13 +592,19 @@ function showRent() {
   state.sinceRent = 0;
   const rent = currentRent();
   const canPay = state.coins >= rent;
-  const canFiar = !canPay && !state.fiado && state.rating >= 7;
-  $('#arriendo-text').textContent = `Don Aurelio pasa por el arriendo: S/ ${S(rent)}.`;
+  /* el primer arriendo siempre tiene gracia (aunque gastaste todo en el mercado);
+     después ya depende de tu fama */
+  const firstGrace = !canPay && !state.fiado && state.rentCycle === 0;
+  const canFiar = !canPay && !state.fiado && (state.rating >= 7 || firstGrace);
+  $('#arriendo-text').textContent = firstGrace
+    ? `Don Aurelio pasa por el arriendo: S/ ${S(rent)}. Ve tu cara de recién llegado y suspira.`
+    : `Don Aurelio pasa por el arriendo: S/ ${S(rent)}.`;
   const payBtn = $('#arriendo-pay');
   payBtn.textContent = canPay ? `Pagar S/ ${S(rent)}` : canFiar ? 'Pedir que te fíe' : 'No me alcanza…';
   payBtn.dataset.mode = canPay ? 'pay' : canFiar ? 'fiar' : 'close';
   $('#arriendo-note').textContent = canPay
     ? (state.rentCycle >= 1 ? 'Y cada mes sube. Ofrece platos más caros.' : 'La hueca sigue abierta un mes más.')
+    : firstGrace ? '«Ya que eres hijito de tu mamita… vuelvo mañana, y ojalá vendas mucho.»'
     : canFiar ? 'Con tu fama, don Aurelio puede esperar. Solo esta vez.'
       : 'Sin sucres y sin fama, don Aurelio no perdona.';
   $('#modal-arriendo').classList.add('open');
