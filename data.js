@@ -411,7 +411,7 @@ const MILESTONES = [
   { served: 25, title: 'Hueca famosa',         reward: 10,
     note: 'Vienen desde el otro lado del río. Hay fila los domingos.' },
   { served: 50, title: 'Leyenda de la ciudad', reward: 20,
-    note: 'Salió en el periódico. La abuela estaría orgullosa.' },
+    note: 'Salió en el periódico. La Delfina estaría orgullosa.' },
   { served: 100, title: 'Patrimonio del sabor', reward: 50,
     note: 'Cien platos servidos. Esto ya es historia nacional.' },
 ];
@@ -423,21 +423,21 @@ const MILESTONES = [
    guía natural: te dice qué aprender para seguir creciendo.
    Inspiración: los VIP de Diner Dash y los pedidos especiales de Stardew. */
 const VISITAS = [
-  { after: 3, name: 'Doña Fanny', icon: 'cliente_rosa', dish: 'tigrillo',
-    ask: 'Mija, me contaron que aquí va a salir un tigrillo de los de antes. Aquí me siento y no me muevo hasta probarlo… y que nadie me apure, ¿oyó?',
-    hintTo: 'Consigue el cuaderno del tigrillo en la lona y prepáraselo.',
+  { after: 3, name: 'Don Segundo', icon: 'cliente_jacinto', dish: 'bolon_mixto',
+    ask: 'A la Delfina yo le compraba cada domingo su bolón MIXTO, con su chicharroncito escondido adentro. ¿Me haces uno igualito, hijo? Aquí te espero, sin apuro.',
+    hintTo: 'El bolón mixto lleva chicharrón: cómpralo en la lona y escóndelo en la masa antes de dorar.',
     reward: 15,
-    beat: '«¡Ese es el tigrillo de mi juventud!» Doña Fanny se limpia una lágrima y jura traer a toda su comadrería. Tu fama sube fuerte.' },
-  { after: 10, name: 'Aníbal, el chofer', icon: 'cliente_chofer', dish: 'encebollado',
+    beat: 'Don Segundo muerde y se le aguan los ojos. «Ese crocante… es igualito al de la Delfina.» Sale contando a todo el barrio que la hueca volvió a abrir.' },
+  { after: 10, name: 'Doña Carmen', icon: 'cliente_rosa', dish: 'tigrillo',
+    ask: '¿Y no me tienes un tigrillito, mija? Con lo mismo del bolón pero revuelto con huevo, como lo hacía tu abuela. No me muevo de aquí hasta probarlo… y que nadie me apure.',
+    hintTo: 'El tigrillo se aprende con su cuaderno (en la lona): el mismo verde majado, pero revuelto con huevo.',
+    reward: 25,
+    beat: '«¡Ese es el tigrillo de la Delfina!» Doña Carmen se limpia una lágrima y jura traer a toda su comadrería. Tu fama sube fuerte.' },
+  { after: 20, name: 'Aníbal, el chofer', icon: 'cliente_chofer', dish: 'encebollado',
     ask: 'Casera, la noche fue larga y el cuerpo pide encebollado. Aquí me quedo en la banca hasta que salga uno que levante muertos.',
     hintTo: 'El levantamuertos (encebollado) se aprende con su cuaderno de la lona.',
-    reward: 25,
-    beat: 'Aníbal resucita al primer sorbo. «Este puerto ya tiene su levantamuertos.» Ahora te manda a todos los choferes de la línea.' },
-  { after: 20, name: 'La seño Rosario', icon: 'cliente_wawa', dish: 'humita',
-    ask: 'Vengo bajando de la sierra y extraño una humita como Dios manda. No tengo apuro, hija: aquí espero, pero no me voy sin ella.',
-    hintTo: 'Abre la hueca serrana (domina 2 platos costeños) y consigue el cuaderno de la humita.',
     reward: 40,
-    beat: 'La seño Rosario envuelve su humita como un tesoro. «Guayaquil y la sierra en una sola hueca.» La ciudad entera empieza a hablar de ti.' },
+    beat: 'Aníbal resucita al primer sorbo. «Este puerto ya tiene su levantamuertos.» Ahora te manda a todos los choferes de la línea.' },
 ];
 
 /* ---------- Economía ---------- */
