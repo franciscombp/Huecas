@@ -318,7 +318,7 @@ function bumpHearts(dir) {
 }
 /* corazón que sube desde la ficha del cliente servido */
 function popServe(id) {
-  const card = document.querySelector(`.client[data-id="${id}"]`);
+  const card = document.querySelector(`.com-card[data-id="${id}"]`);
   if (!card) return;
   const r = card.getBoundingClientRect();
   const b = el('span', 'serve-burst', iconOf('corazon'));
@@ -400,9 +400,12 @@ function clockTick() {
     if (currentScreen === 'cocina') updateQueueBars();
     return;
   }
-  /* expirar */
+  /* barra de sushi: solo el comensal del frente pierde paciencia; los de
+     atrás esperan su turno (su reloj arranca cuando llegan al mostrador) */
+  const front = queue.find(c => !c.story) || null;
+  queue.forEach(c => { if (c !== front && !c.story && isFinite(c.deadline)) c.deadline += dt; });
   let expired = false;
-  for (const c of [...queue]) if (now >= c.deadline) { missCustomer(c.id, true); expired = true; }
+  if (front && now >= front.deadline) { missCustomer(front.id, true); expired = true; }
   /* aparecer */
   const tier = pressureTier();
   if (queue.length < HUECA.queueMax && now - lastSpawn >= tier.spawnMs) spawnCustomer();
@@ -425,19 +428,18 @@ function spawnCustomer() {
   queue.push({ id: ++custId, ...who, dish, deadline: Date.now() + tier.patience * 1000, total: tier.patience });
   lastSpawn = Date.now();
   buzz(30);
-  if (currentScreen === 'cocina') renderQueue();
+  if (currentScreen === 'cocina') renderComensal();
 }
 
 function updateQueueBars() {
-  queue.forEach(c => {
-    if (c.story) return;                       /* la visita no tiene reloj */
-    const bar = document.querySelector(`.client[data-id="${c.id}"] .cl-bar`);
-    const card = document.querySelector(`.client[data-id="${c.id}"]`);
-    if (!bar || !card) return;
-    const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
-    bar.style.transform = `scaleX(${frac})`;
-    card.classList.toggle('urgent', frac < 0.35);
-  });
+  /* solo el comensal del frente tiene reloj visible en la barra */
+  const front = queue.find(c => !c.story);
+  const box = $('#comensal');
+  const bar = box && box.querySelector('.com-bar');
+  if (!front || !bar || storyGuest()) return;
+  const frac = Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
+  bar.style.transform = `scaleX(${frac})`;
+  box.classList.toggle('urgent', frac < 0.35);
 }
 
 function serveCustomer(id) {
@@ -445,7 +447,7 @@ function serveCustomer(id) {
   if (idx < 0) return;
   const c = queue[idx];
   if (count(c.dish) < 1) { toast('Todavía no tienes ese plato listo.', 'soft'); return; }
-  const at = centerOf(`.client[data-id="${id}"]`);
+  const at = centerOf(`.com-card[data-id="${id}"]`) || centerOf('.mesa');
   addItem(c.dish, -1);
   popServe(id);
   if (c.story) { resolveVisita(c, idx, at); return; }
@@ -482,7 +484,7 @@ function maybeVisita() {
   lastSpawn = Date.now();
   buzz([50, 40, 50]);
   toast(`★ Llegó ${v.name}: pide ${ITEMS[v.dish].name} y no se irá sin él.`, 'seal');
-  if (currentScreen === 'cocina') renderQueue();
+  if (currentScreen === 'cocina') renderComensal();
   setTimeout(() => { if (!modalOpen()) showVisita(v); }, 900);
 }
 
@@ -526,7 +528,7 @@ function afterResolve(missed) {
   save();
   /* sincroniza toda la cocina (mesa incluida) salvo si hay una cocción en curso:
      así el plato servido no queda fantasma en la mesa ni deja botones muertos */
-  if (currentScreen === 'cocina') { if (combining) { renderQueue(); renderReady(); } else renderCocina(); }
+  if (currentScreen === 'cocina') { if (combining) { renderComensal(); renderReady(); } else renderCocina(); }
   if (currentScreen === 'mercado') renderMercado();
   maybeUnlockRegion();
   if (missed && state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 700); return; }
@@ -825,8 +827,7 @@ let combining = false;
 let pickerSlot = 0;
 
 function renderCocina() {
-  renderQueue();
-  renderChips();
+  renderComensal();
   renderSlots();
   renderMesaAction();
   renderRiddle();
@@ -834,79 +835,43 @@ function renderCocina() {
   updateCoach();
 }
 
-/* --- cola de clientes (estilo PvZ) --- */
-function renderQueue() {
-  const hueca = REGIONS[state.region];
-  $('#kitchen-name').textContent = state.huecaName || hueca.name;
-  const strip = $('#kitchen-sub');
+/* --- El comensal al otro lado del mostrador (barra de sushi):
+       uno al frente, grande; el resto espera su turno detrás --- */
+function renderComensal() {
+  const box = $('#comensal');
+  box.innerHTML = '';
+
+  /* estados de calma: sin recetas o modo tranquilo → mostrador sereno */
+  if (!realDishes().length) { box.className = 'comensal calm'; box.appendChild(el('p', 'mostrador-note hand', 'Descubre tu primer plato en la mesa y llegará la clientela.')); return; }
+  if (state.mode === 'tranquilo') { box.className = 'comensal calm'; box.appendChild(el('p', 'mostrador-note hand', 'Modo tranquilo · cocina sin prisa 🌙')); return; }
+
   const guest = storyGuest();
-  if (!realDishes().length) { strip.textContent = 'Descubre tu primer plato para abrir'; strip.className = 'kitchen-sub calm'; }
-  else if (state.mode === 'tranquilo') { strip.textContent = 'Modo tranquilo · sin clientes'; strip.className = 'kitchen-sub calm'; }
-  else if (guest) { strip.textContent = '★ Fila en pausa'; strip.className = 'kitchen-sub story'; }
-  else if (state.consecutiveMisses >= 1) { strip.textContent = `⚠ ${state.consecutiveMisses}/${SALUBRIDAD.missLimit} sin servir · ten un plato listo`; strip.className = 'kitchen-sub warn'; }
-  else { strip.textContent = 'Servicio abierto'; strip.className = 'kitchen-sub on'; }
+  const front = guest || queue.find(c => !c.story) || null;
+  if (!front) { box.className = 'comensal calm'; box.appendChild(el('p', 'mostrador-note hand', 'El mostrador está libre… ya vendrá alguien ☕')); return; }
 
-  const row = $('#queue');
-  row.innerHTML = '';
-  if (state.mode === 'tranquilo') { row.appendChild(el('span', 'queue-empty hand', 'Explora recetas con calma 🌙')); return; }
-  /* asientos fijos: la fila no se colapsa; la visita puede sumar un asiento */
-  const seats = Math.max(HUECA.queueMax, queue.length);
-  for (let i = 0; i < seats; i++) {
-    const c = queue[i];
-    if (!c) {
-      const seat = el('div', 'client seat');
-      seat.innerHTML = `<span class="seat-mark">${i === 0 && !realDishes().length ? '' : '·'}</span>`;
-      row.appendChild(seat);
-      continue;
-    }
-    const have = count(c.dish) >= 1;
-    if (c.story) {
-      const card = el('div', 'client story' + (have ? ' ready' : ''));
-      card.dataset.id = c.id;
-      card.title = `${c.name}: “${c.ask || ''}”`;
-      card.innerHTML = `
-        <span class="cl-crown" aria-hidden="true">★</span>
-        <span class="cl-avatar">${iconOf(c.icon)}</span>
-        <span class="cl-bubble" title="Pide ${ITEMS[c.dish].name}">${iconOf(c.dish)}</span>
-        <span class="cl-name">${c.name}</span>
-        <div class="cl-wait">${have ? '¡listo!' : 'te espera'}</div>
-        <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;
-      card.querySelector('.cl-serve').addEventListener('click', () => serveCustomer(c.id));
-      row.appendChild(card);
-      continue;
-    }
-    const frac = Math.max(0, (c.deadline - Date.now()) / (c.total * 1000));
-    const card = el('div', 'client' + (have ? ' ready' : '') + (guest ? ' frozen' : ''));
-    card.dataset.id = c.id;
-    if (c.line) card.title = `${c.name}: “${c.line}”`;
-    card.innerHTML = `
-      <span class="cl-avatar">${iconOf(c.icon)}</span>
-      <span class="cl-bubble" title="Pide ${ITEMS[c.dish].name}">${iconOf(c.dish)}</span>
-      <span class="cl-name">${c.name}</span>
-      <div class="cl-bar-wrap"><span class="cl-bar" style="transform:scaleX(${frac})"></span></div>
-      <button type="button" class="cl-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : ITEMS[c.dish].name}</button>`;
-    inkState(card.querySelector('.cl-avatar'), c.icon);
-    card.querySelector('.cl-serve').addEventListener('click', () => serveCustomer(c.id));
-    row.appendChild(card);
-  }
-  if (!queue.length && !realDishes().length) {
-    row.innerHTML = '';
-    row.appendChild(el('span', 'queue-empty hand', 'Descubre tu primer plato y llegará la clientela'));
-  }
-}
+  const waiting = queue.filter(c => c !== front).length;
+  const have = count(front.dish) >= 1;
+  box.className = 'comensal' + (front.story ? ' story' : '') + (have ? ' ready' : '');
 
-/* --- selector de cuaderno activo --- */
-function renderChips() {
-  const chips = $('#cocina-chips');
-  chips.innerHTML = '';
-  state.owned.forEach(cid => {
-    const c = CUADERNOS[cid];
-    const b = el('button', 'chip-book' + (cid === state.active ? ' current' : ''));
-    b.type = 'button';
-    b.innerHTML = `<span class="chip-icon">${iconOf(isComplete(cid) ? c.dish : 'cuaderno')}</span><span>${ITEMS[c.dish].name}</span>`;
-    b.addEventListener('click', () => { state.active = cid; save(); renderCocina(); });
-    chips.appendChild(b);
-  });
+  const card = el('div', 'com-card');
+  card.dataset.id = front.id;
+  const frac = front.story ? 1 : Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
+  card.innerHTML = `
+    ${front.story ? '<span class="com-crown" aria-hidden="true">★</span>' : ''}
+    <span class="com-avatar">${iconOf(front.icon)}</span>
+    <div class="com-txt">
+      <span class="com-name">${front.name}</span>
+      <span class="com-want"><span class="com-dish">${iconOf(front.dish)}</span>quiere <b>${ITEMS[front.dish].name}</b></span>
+      ${front.story
+        ? '<span class="com-wait hand">no se irá sin él</span>'
+        : `<span class="com-bar-wrap"><span class="com-bar" style="transform:scaleX(${frac})"></span></span>`}
+    </div>
+    <button type="button" class="com-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : 'Cocínalo'}</button>`;
+  if (!front.story) inkState(card.querySelector('.com-avatar'), front.icon);
+  card.querySelector('.com-serve').addEventListener('click', () => { if (have) serveCustomer(front.id); });
+  box.appendChild(card);
+
+  if (waiting > 0) box.appendChild(el('span', 'com-waiting hand', `+${waiting} esperando su turno`));
 }
 
 function itemCard(id) {
@@ -1021,40 +986,37 @@ function renderMesaAction() {
 
 function renderRiddle() {
   const note = $('#cocina-riddle');
+  const dish = ITEMS[CUADERNOS[state.active].dish].name;
   const step = CUADERNOS[state.active].steps.find(s => !knows(s.result) && !s.variant);
-  if (!step) { note.innerHTML = `<span class="hand">✓ ${ITEMS[CUADERNOS[state.active].dish].name} recuperado. Cocínalo de memoria.</span>`; return; }
-  note.innerHTML = `<span class="riddle-label">el cuaderno murmura…</span> <span class="hand">“${step.hint}”</span>`;
+  if (!step) { note.className = 'cocina-riddle done'; note.innerHTML = `<span class="riddle-label">${dish}</span><span class="riddle-hint hand">✓ te lo sabes de memoria</span>`; return; }
+  note.className = 'cocina-riddle';
+  note.innerHTML = `<span class="riddle-label">${dish} · el cuaderno dice</span><span class="riddle-hint hand">“${step.hint}”</span>`;
 }
 
-/* --- estante de platos listos (abajo, siempre visible) --- */
+/* --- repisa de platos listos: tira compacta, se oculta si no hay --- */
 function renderReady() {
   const shelf = $('#ready-shelf'); shelf.innerHTML = '';
   const done = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0);
-  const n = done.reduce((t, id) => t + count(id), 0);
-  $('#ready-count').textContent = n ? String(n) : '';
-  if (!done.length) {
-    shelf.appendChild(el('div', 'ready-empty hand', realDishes().length ? 'Cocina un plato en la mesa 🍳' : 'Aprende tu primera receta 📖'));
-    return;
-  }
+  shelf.classList.toggle('has', done.length > 0);
+  if (!done.length) return;
+  shelf.appendChild(el('span', 'ready-label hand', 'listos'));
   done.forEach(id => {
-    const wrap = el('div', 'ready-card');
-    const top = el('div', 'ready-top');
+    const worth = ITEMS[id].sell;
+    const wanted = queue.find(c => c.dish === id);
+    const chip = el('div', 'ready-chip' + (wanted ? ' wanted' : ''));
     const card = itemCard(id);
     card.append(el('span', 'badge ready-n', String(count(id))));
     card.draggable = true;
     card.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', id); });
     card.addEventListener('click', () => placeInSlot(id));   /* recalentar / combos */
-    top.appendChild(card);
-    wrap.appendChild(top);
-    const acts = el('div', 'ready-actions');
-    const worth = ITEMS[id].sell;
-    const wanted = queue.find(c => c.dish === id);
+    chip.appendChild(card);
+    const acts = el('div', 'chip-acts');
     if (wanted) {
-      const sv = el('button', 'ready-btn serve', 'Servir');
+      const sv = el('button', 'chip-btn serve', 'servir');
       sv.addEventListener('click', () => serveCustomer(wanted.id));
       acts.appendChild(sv);
     }
-    const sell = el('button', 'ready-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'Botar');
+    const sell = el('button', 'chip-btn ' + (worth ? 'sell' : 'toss'), worth ? `S/ ${S(worth)}` : 'botar');
     sell.title = worth ? `Vender por S/ ${S(worth)}` : 'Botar';
     sell.addEventListener('click', (e) => {
       addItem(id, -1);
@@ -1063,8 +1025,8 @@ function renderReady() {
       buzz(25); save(); renderCocina();
     });
     acts.appendChild(sell);
-    wrap.appendChild(acts);
-    shelf.appendChild(wrap);
+    chip.appendChild(acts);
+    shelf.appendChild(chip);
   });
 }
 
@@ -1489,10 +1451,8 @@ function init() {
   $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
   const sb = $('#hud-sound'); sb.textContent = state.muted ? '🔇' : '🔊'; sb.classList.toggle('off', !!state.muted);
   if (!fsSupported()) document.body.classList.add('no-fs');
-  /* acuarela + escena ilustrada (§3): defs globales una vez, escena de fondo */
+  /* defs de acuarela para los íconos (gradientes compartidos) */
   if (typeof ICON_DEFS === 'string') document.body.insertAdjacentHTML('afterbegin', ICON_DEFS);
-  if (typeof ILLUS_DEFS === 'string') document.body.insertAdjacentHTML('afterbegin', ILLUS_DEFS);
-  if (typeof SCENE_COCINA === 'string') $('#cocina-scene').innerHTML = SCENE_COCINA;
   $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
   renderHud();
