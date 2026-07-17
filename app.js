@@ -1489,6 +1489,10 @@ function init() {
   $('#btn-new').textContent = saved ? 'Hueca nueva' : 'Abrir la hueca';
   const sb = $('#hud-sound'); sb.textContent = state.muted ? '🔇' : '🔊'; sb.classList.toggle('off', !!state.muted);
   if (!fsSupported()) document.body.classList.add('no-fs');
+  /* acuarela + escena ilustrada (§3): defs globales una vez, escena de fondo */
+  if (typeof ICON_DEFS === 'string') document.body.insertAdjacentHTML('afterbegin', ICON_DEFS);
+  if (typeof ILLUS_DEFS === 'string') document.body.insertAdjacentHTML('afterbegin', ILLUS_DEFS);
+  if (typeof SCENE_COCINA === 'string') $('#cocina-scene').innerHTML = SCENE_COCINA;
   $$('[data-icon]').forEach(n => { n.innerHTML = iconOf(n.dataset.icon); });
   bindEvents();
   renderHud();
