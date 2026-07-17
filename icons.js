@@ -6,9 +6,39 @@
    ============================================================ */
 
 const INK = '#4a4038';
+const INKL = '#4a3c29';   /* línea de tinta cálida para contornos (acuarela) */
 
 const _svg = (inner) =>
   `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${inner}</svg>`;
+
+/* Defs globales de acuarela: se inyectan una vez en el documento.
+   Gradientes (luz arriba-izquierda) dan volumen; sheen/depth pintan
+   cualquier forma sólida sin tocar cada ícono (§3: tinta + acuarela). */
+const _grad = (id, a, b, c, cx = 37, cy = 30, r = 74) =>
+  `<radialGradient id="${id}" cx="${cx}%" cy="${cy}%" r="${r}%">
+     <stop offset="0%" stop-color="${a}"/><stop offset="58%" stop-color="${b}"/><stop offset="100%" stop-color="${c}"/>
+   </radialGradient>`;
+const ICON_DEFS = `
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <radialGradient id="ico-sheen" cx="34%" cy="25%" r="46%">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity=".52"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="ico-depth" cx="50%" cy="40%" r="63%">
+    <stop offset="52%" stop-color="#3a2c18" stop-opacity="0"/><stop offset="100%" stop-color="#3a2c18" stop-opacity=".26"/>
+  </radialGradient>
+  ${_grad('g-verde', '#bcd8a4', '#97b781', '#6f8f5c')}
+  ${_grad('g-verde2', '#d6e0ac', '#b9c78a', '#93a566')}
+  ${_grad('g-majado', '#ccd699', '#a8b877', '#869755')}
+  ${_grad('g-oro', '#ecd792', '#cdb46e', '#a2894c')}
+  ${_grad('g-oro2', '#ddba75', '#c6a05e', '#987a44')}
+  ${_grad('g-queso', '#f9e2a8', '#f0cd8f', '#d3a75f')}
+  ${_grad('g-clara', '#ffffff', '#fbf5e6', '#e9d7b2', 40, 34, 66)}
+  ${_grad('g-yema', '#ffd982', '#f2b84e', '#d1912c', 38, 34, 62)}
+  ${_grad('g-cafe', '#c9a178', '#a97e56', '#6f5238')}
+  ${_grad('g-cafeliq', '#7c5d40', '#5d4630', '#3b2a1a', 40, 30, 70)}
+  ${_grad('g-caldo', '#f1d489', '#e6c675', '#c39f4d')}
+  ${_grad('g-loza', '#fdf7e7', '#f2e8cf', '#dccea6')}
+</defs></svg>`;
 
 /* carita kawaii: ojos, sonrisa y chapetes */
 function face(x = 32, y = 34, s = 1, mood = 'happy') {
@@ -33,36 +63,52 @@ const steam = (x = 32, y = 14) =>
      <path d="M${x - 6} ${y + 6} Q${x - 9} ${y + 1} ${x - 6} ${y - 3}"/>
      <path d="M${x + 6} ${y + 8} Q${x + 3} ${y + 3} ${x + 6} ${y - 1}"/></g>`;
 
-/* tazón chubby con contenido */
-function bowl(content, { steamOn = false, extra = '', bowlFill = '#f6eed9' } = {}) {
+/* tazón chubby con contenido — loza con volumen, tinta y luz de borde */
+function bowl(content, { steamOn = false, extra = '', bowlFill = 'url(#g-loza)' } = {}) {
   return `${steamOn ? steam(32, 16) : ''}
-    <ellipse cx="32" cy="30" rx="21" ry="7" fill="${content}"/>
+    <ellipse cx="33" cy="53.5" rx="19" ry="3.4" fill="#3a2c18" opacity=".16"/>
+    <path d="M10 30 Q10 51 32 51 Q54 51 54 30 Z" fill="${bowlFill}"/>
+    <path d="M10 30 Q10 51 32 51 Q54 51 54 30 Z" fill="url(#ico-depth)"/>
+    <ellipse cx="32" cy="30" rx="22" ry="7.6" fill="${INKL}" opacity=".16"/>
+    <ellipse cx="32" cy="29.4" rx="20.5" ry="6.7" fill="${content}"/>
+    <ellipse cx="32" cy="29.4" rx="20.5" ry="6.7" fill="url(#ico-sheen)"/>
     ${extra}
-    <path d="M11 30 Q11 50 32 50 Q53 50 53 30 Z" fill="${bowlFill}"/>
-    <path d="M11 30 Q11 50 32 50 Q53 50 53 30" fill="none" stroke="#e2d5ba" stroke-width="2"/>
-    <ellipse cx="32" cy="52" rx="9" ry="2.5" fill="#e2d5ba"/>`;
+    <path d="M13 33 Q14.5 47 30 50.5" fill="none" stroke="#fffaf0" stroke-width="1.9" stroke-opacity=".5" stroke-linecap="round"/>
+    <path d="M10 30 Q10 51 32 51 Q54 51 54 30" fill="none" stroke="${INKL}" stroke-width="1.8" stroke-linecap="round"/>`;
 }
 
-/* pelotita con carita */
+/* pelotita con carita — volumen de acuarela, brillo especular y tinta */
 const ball = (fill, dots = '', mood = 'happy') =>
-  `<circle cx="32" cy="34" r="19" fill="${fill}"/>${dots}${face(32, 34, 1, mood)}`;
+  `<ellipse cx="33" cy="52.5" rx="15" ry="3.2" fill="#3a2c18" opacity=".16"/>
+   <circle cx="32" cy="34" r="19" fill="${fill}"/>
+   <circle cx="32" cy="34" r="19" fill="url(#ico-depth)"/>
+   <circle cx="32" cy="34" r="19" fill="url(#ico-sheen)"/>
+   <ellipse cx="24.5" cy="26" rx="6" ry="4.1" fill="#fff" opacity=".32"/>
+   <circle cx="32" cy="34" r="19" fill="none" stroke="${INKL}" stroke-width="1.6" stroke-opacity=".55"/>
+   ${dots}${face(32, 34, 1, mood)}`;
 
 const ICONS = {};
 
 /* ============ Ingredientes ============ */
 
 ICONS.verde = _svg(`
-  <rect x="25" y="12" width="13" height="38" rx="6.5" fill="#8fae7e" transform="rotate(-16 32 50)"/>
-  <rect x="25" y="12" width="13" height="38" rx="6.5" fill="#8fae7e" transform="rotate(16 32 50)"/>
-  <rect x="25" y="9" width="13" height="42" rx="6.5" fill="#9dbd8a"/>
+  <ellipse cx="33" cy="53" rx="15" ry="3.2" fill="#3a2c18" opacity=".15"/>
+  <g stroke="${INKL}" stroke-width="1.5" stroke-opacity=".5">
+    <rect x="25" y="12" width="13" height="38" rx="6.5" fill="url(#g-verde)" transform="rotate(-16 32 50)"/>
+    <rect x="25" y="12" width="13" height="38" rx="6.5" fill="url(#g-verde)" transform="rotate(16 32 50)"/>
+    <rect x="25" y="9" width="13" height="42" rx="6.5" fill="url(#g-verde)"/>
+  </g>
   <rect x="28" y="6" width="7" height="7" rx="2.5" fill="#6f8a5f"/>
+  <path d="M29.5 15 Q27.5 30 30 46" stroke="#d0e2b8" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
   ${face(31.5, 32, .85)}`);
 
 ICONS.queso = _svg(`
-  <path d="M9 45 L29 15 Q32 11 35 15 L55 45 Q57 50 51 50 H13 Q7 50 9 45 Z" fill="#f2d29b"/>
-  <circle cx="24" cy="40" r="3.4" fill="#e0b96f"/>
-  <circle cx="41" cy="36" r="2.6" fill="#e0b96f"/>
-  <circle cx="33" cy="45" r="2.2" fill="#e0b96f"/>
+  <ellipse cx="33" cy="52" rx="21" ry="3.2" fill="#3a2c18" opacity=".14"/>
+  <path d="M9 45 L29 15 Q32 11 35 15 L55 45 Q57 50 51 50 H13 Q7 50 9 45 Z" fill="url(#g-queso)" stroke="${INKL}" stroke-width="1.6" stroke-opacity=".5"/>
+  <path d="M29 15 Q32 11 35 15 L55 45 Q57 50 51 50" fill="none" stroke="#fdf0c8" stroke-width="2" stroke-opacity=".55" stroke-linecap="round"/>
+  <circle cx="24" cy="40" r="3.4" fill="#dcae5f"/><circle cx="22.6" cy="38.8" r="1.3" fill="#f7e2a8"/>
+  <circle cx="41" cy="36" r="2.6" fill="#dcae5f"/><circle cx="40" cy="35.2" r="1" fill="#f7e2a8"/>
+  <circle cx="33" cy="45" r="2.2" fill="#dcae5f"/>
   ${face(32, 30, .8)}`);
 
 ICONS.chicharron = _svg(`
@@ -148,42 +194,53 @@ ICONS.hoja = _svg(`
   <path d="M32 12 V52 M32 24 Q24 26 20 32 M32 24 Q40 26 44 32 M32 38 Q26 40 23 44 M32 38 Q38 40 41 44" stroke="#7d9b76" stroke-width="2" fill="none" stroke-linecap="round"/>`);
 
 ICONS.huevo = _svg(`
-  <ellipse cx="32" cy="36" rx="20" ry="15" fill="#fbf6e9"/>
-  <ellipse cx="32" cy="36" rx="20" ry="15" fill="none" stroke="#ece2c8" stroke-width="1.5"/>
-  <circle cx="32" cy="36" r="8" fill="#f2b84e"/>
+  <ellipse cx="33" cy="50" rx="18" ry="3" fill="#3a2c18" opacity=".13"/>
+  <ellipse cx="32" cy="36" rx="20" ry="15" fill="url(#g-clara)" stroke="${INKL}" stroke-width="1.5" stroke-opacity=".42"/>
+  <ellipse cx="24" cy="29" rx="6.5" ry="4" fill="#fff" opacity=".55"/>
+  <circle cx="32" cy="36" r="8" fill="url(#g-yema)"/>
+  <ellipse cx="29.5" cy="33.5" rx="2.5" ry="1.7" fill="#fff" opacity=".55"/>
   ${face(32, 36, .7)}`);
 
 ICONS.cafe = _svg(`
-  <path d="M18 24 L46 24 L50 50 Q50 54 46 54 H18 Q14 54 14 50 Z" fill="#b08a63"/>
+  <ellipse cx="33" cy="55" rx="19" ry="3" fill="#3a2c18" opacity=".15"/>
+  <path d="M18 24 L46 24 L50 50 Q50 54 46 54 H18 Q14 54 14 50 Z" fill="url(#g-cafe)" stroke="${INKL}" stroke-width="1.6" stroke-opacity=".5"/>
   <path d="M18 24 L46 24 L47 30 H17 Z" fill="#8a6240"/>
-  <ellipse cx="26" cy="42" rx="4" ry="2.8" fill="#5d4630" transform="rotate(-18 26 42)"/>
-  <ellipse cx="37" cy="45" rx="4" ry="2.8" fill="#5d4630" transform="rotate(14 37 45)"/>
+  <path d="M20 32 Q20 46 22 52" stroke="#d8b78e" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".6"/>
+  <ellipse cx="26" cy="42" rx="4" ry="2.8" fill="#4d3826" transform="rotate(-18 26 42)"/>
+  <ellipse cx="37" cy="45" rx="4" ry="2.8" fill="#4d3826" transform="rotate(14 37 45)"/>
   <ellipse cx="32" cy="17" rx="5" ry="3.4" fill="#5d4630"/>
   <ellipse cx="24" cy="14" rx="4" ry="2.8" fill="#6f543a" transform="rotate(-20 24 14)"/>
   ${face(31, 38, .68)}`);
 
 ICONS.cafe_pasado = _svg(`
   ${steam(30, 14)}
-  <path d="M12 26 Q12 50 30 50 Q48 50 48 26 Z" fill="#fbf6e9"/>
-  <path d="M12 26 Q12 50 30 50 Q48 50 48 26" fill="none" stroke="#e2d5ba" stroke-width="2"/>
-  <ellipse cx="30" cy="26" rx="18" ry="5.5" fill="#5d4630"/>
-  <path d="M48 30 Q57 30 56 37 Q55 43 46 43" fill="none" stroke="#e2d5ba" stroke-width="4" stroke-linecap="round"/>
-  <ellipse cx="30" cy="52" rx="9" ry="2.5" fill="#e2d5ba"/>
+  <ellipse cx="30" cy="52.5" rx="15" ry="2.8" fill="#3a2c18" opacity=".15"/>
+  <path d="M12 26 Q12 50 30 50 Q48 50 48 26 Z" fill="url(#g-loza)"/>
+  <path d="M12 26 Q12 50 30 50 Q48 50 48 26 Z" fill="url(#ico-depth)"/>
+  <ellipse cx="30" cy="26" rx="18" ry="5.5" fill="url(#g-cafeliq)"/>
+  <ellipse cx="26" cy="24.5" rx="6" ry="1.9" fill="#8a6a48" opacity=".7"/>
+  <path d="M48 29 Q58 29 57 37 Q56 44 46 44" fill="none" stroke="${INKL}" stroke-width="3.4" stroke-opacity=".7" stroke-linecap="round"/>
+  <path d="M12 26 Q12 50 30 50 Q48 50 48 26" fill="none" stroke="${INKL}" stroke-width="1.8" stroke-opacity=".6" stroke-linecap="round"/>
   ${face(30, 38, .72)}`);
 
 ICONS.huevo_frito = _svg(`
-  <path d="M14 34 Q12 22 24 20 Q30 12 40 17 Q52 16 52 28 Q56 38 46 44 Q40 52 28 48 Q14 48 14 34 Z" fill="#fdfaf0"/>
-  <path d="M14 34 Q12 22 24 20 Q30 12 40 17 Q52 16 52 28 Q56 38 46 44 Q40 52 28 48 Q14 48 14 34 Z" fill="none" stroke="#ece2c8" stroke-width="1.6"/>
-  <circle cx="33" cy="33" r="9.5" fill="#f2b84e"/>
-  <circle cx="30" cy="30" r="2.6" fill="#f8d489" opacity=".9"/>
+  <ellipse cx="33" cy="49" rx="18" ry="3" fill="#3a2c18" opacity=".12"/>
+  <path d="M14 34 Q12 22 24 20 Q30 12 40 17 Q52 16 52 28 Q56 38 46 44 Q40 52 28 48 Q14 48 14 34 Z" fill="url(#g-clara)" stroke="${INKL}" stroke-width="1.5" stroke-opacity=".42"/>
+  <path d="M18 30 Q17 24 24 22" fill="none" stroke="#fff" stroke-width="2.4" stroke-opacity=".55" stroke-linecap="round"/>
+  <circle cx="33" cy="33" r="9.5" fill="url(#g-yema)"/>
+  <ellipse cx="30" cy="30" rx="2.8" ry="2" fill="#fff" opacity=".55"/>
   ${face(33, 34, .68)}`);
 
 ICONS.bolon_huevo = _svg(`
-  <circle cx="32" cy="38" r="16" fill="#cfa561"/>
-  <circle cx="25" cy="34" r="2.4" fill="#f0e2b8"/>
-  <circle cx="39" cy="42" r="2" fill="#8fae7e"/>
-  <path d="M18 28 Q16 18 26 17 Q31 11 39 15 Q48 14 47 24 Q50 30 43 33 Q36 37 27 34 Q18 35 18 28 Z" fill="#fdfaf0"/>
-  <circle cx="33" cy="25" r="6.5" fill="#f2b84e"/>
+  <ellipse cx="32" cy="53" rx="14" ry="2.8" fill="#3a2c18" opacity=".15"/>
+  <circle cx="32" cy="38" r="16" fill="url(#g-oro)"/>
+  <circle cx="32" cy="38" r="16" fill="url(#ico-depth)"/>
+  <ellipse cx="25" cy="31" rx="5" ry="3.4" fill="#fff" opacity=".28"/>
+  <circle cx="32" cy="38" r="16" fill="none" stroke="${INKL}" stroke-width="1.5" stroke-opacity=".5"/>
+  <circle cx="27" cy="43" r="1.8" fill="#a3854e"/><circle cx="38" cy="44" r="1.6" fill="#a3854e"/>
+  <path d="M18 27 Q16 17 26 16 Q31 10 39 14 Q48 13 47 23 Q50 29 43 32 Q36 36 27 33 Q18 34 18 27 Z" fill="url(#g-clara)" stroke="${INKL}" stroke-width="1.4" stroke-opacity=".4"/>
+  <circle cx="33" cy="24" r="6.5" fill="url(#g-yema)"/>
+  <ellipse cx="30.5" cy="22" rx="2" ry="1.4" fill="#fff" opacity=".5"/>
   ${face(32, 44, .72)}`);
 
 /* ============ Utensilios ============ */
@@ -319,25 +376,13 @@ ICONS.bolon = _svg(`${steam(32, 12)}
 ICONS.bolon_mixto = _svg(`${steam(32, 12)}
   ${ball('#c9a05e', `<ellipse cx="23" cy="26" rx="3" ry="2" fill="#a5744c"/><ellipse cx="42" cy="29" rx="3" ry="2" fill="#a5744c"/><ellipse cx="36" cy="46" rx="3" ry="2" fill="#a5744c"/>`)}`);
 
-ICONS.tigrillo = _svg(`${steam(32, 12)}
-  <ellipse cx="32" cy="30" rx="21" ry="7" fill="#e9c877"/>
-  <circle cx="24" cy="28" r="2.6" fill="#f2b84e"/>
-  <ellipse cx="36" cy="29" rx="4" ry="2" fill="#f6e2b0"/>
-  <circle cx="41" cy="27" r="2.2" fill="#c98a5b"/>
-  <path d="M11 30 Q11 50 32 50 Q53 50 53 30 Z" fill="#f6eed9"/>
-  <path d="M11 30 Q11 50 32 50 Q53 50 53 30" fill="none" stroke="#e2d5ba" stroke-width="2"/>
-  <ellipse cx="32" cy="52" rx="9" ry="2.5" fill="#e2d5ba"/>
-  ${face(32, 39, .74)}`);
+ICONS.tigrillo = _svg(bowl('url(#g-caldo)', { steamOn: true, extra:
+  `<circle cx="24" cy="27" r="2.6" fill="#f2b84e"/><ellipse cx="36" cy="28.5" rx="4" ry="2" fill="#f6e2b0"/><circle cx="41" cy="27" r="2.2" fill="#c98a5b"/>` })
+  + face(32, 40, .74));
 
-ICONS.tigrillo_mixto = _svg(`${steam(32, 12)}
-  <ellipse cx="32" cy="30" rx="21" ry="7" fill="#e0b45c"/>
-  <ellipse cx="24" cy="28" rx="3" ry="2" fill="#a5744c"/>
-  <circle cx="35" cy="29" r="2.4" fill="#f2b84e"/>
-  <ellipse cx="41" cy="27" rx="3" ry="2" fill="#a5744c"/>
-  <path d="M11 30 Q11 50 32 50 Q53 50 53 30 Z" fill="#f6eed9"/>
-  <path d="M11 30 Q11 50 32 50 Q53 50 53 30" fill="none" stroke="#e2d5ba" stroke-width="2"/>
-  <ellipse cx="32" cy="52" rx="9" ry="2.5" fill="#e2d5ba"/>
-  ${face(32, 39, .74)}`);
+ICONS.tigrillo_mixto = _svg(bowl('url(#g-oro2)', { steamOn: true, extra:
+  `<ellipse cx="24" cy="27.5" rx="3" ry="2" fill="#a5744c"/><circle cx="35" cy="28.5" r="2.4" fill="#f2b84e"/><ellipse cx="41" cy="27" rx="3" ry="2" fill="#a5744c"/>` })
+  + face(32, 40, .74));
 
 ICONS.quemado = _svg(`${steam(30, 12)}
   <ellipse cx="32" cy="30" rx="21" ry="7" fill="#5c5040"/>

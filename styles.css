@@ -1794,6 +1794,111 @@ body { background: #d8cdb4; font-family: var(--serif); color: var(--ink); }
 
 /* despensa: los flotantes no tapan el estante en pantallas cortas */
 @media (max-height: 705px) {
-  .fab-main .fab-icon { width: 54px; height: 54px; }
+  .fab-main .fab-icon { width: 52px; height: 52px; }
+  .fab-mini .fab-icon { width: 40px; height: 40px; }
+}
+
+/* ============================================================
+   v15 — EL GIRO VISUAL: escena ilustrada + acuarela + luz
+   La cocina deja de ser un wireframe y pasa a ser una página
+   ilustrada con profundidad, luz cálida y tinta (§3.1).
+   ============================================================ */
+
+/* --- Papel más vivo y viñeta soñada más marcada --- */
+#stage {
+  background:
+    var(--noise),
+    radial-gradient(140% 100% at 50% -8%, #fef9ee 0%, var(--paper) 46%, #ece0c4 100%);
+  box-shadow: inset 0 0 120px rgba(120, 96, 52, .22), 0 0 60px rgba(60, 45, 25, .38);
+}
+#stage::after {
+  box-shadow: inset 0 0 140px rgba(96, 78, 46, .22);
+  opacity: .55;
+}
+
+/* --- Volumen en los íconos: sombra suave (sobre el contenedor,
+       para no pisar el filtro de boceto en el <svg>) --- */
+.item-card .icon, .slot .item-card .icon,
+.cl-avatar, .cl-bubble, .cook-ic, .chip-icon,
+.receta-dish-icon, .cover-icons span, .book-icon,
+.ready-card .icon, .mb-icon, .paso-icon, .vw-ic,
+.celebra-burst span, .fab-icon {
+  filter: drop-shadow(0 2px 1.5px rgba(74, 54, 30, .24));
+}
+.cover-icons span { filter: drop-shadow(0 3px 2.5px rgba(74, 54, 30, .3)); }
+.receta-dish-icon { filter: drop-shadow(0 3px 2.5px rgba(74, 54, 30, .28)); }
+
+/* --- Escena ilustrada detrás de la cocina --- */
+#screen-cocina { position: relative; }
+.cocina-scene-bg {
+  position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  opacity: .5;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.25) 0, #000 20%, #000 74%, transparent 100%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,.25) 0, #000 20%, #000 74%, transparent 100%);
+}
+.cocina-scene-bg svg { width: 100%; height: 100%; }
+.kitchen { position: relative; z-index: 1; }
+
+/* --- Luz de fogón: un charco cálido bajo la mesa (§3.1) --- */
+.k-stage {
+  position: relative;
+  background:
+    radial-gradient(70% 46% at 50% 58%, rgba(240, 196, 110, .30), rgba(240, 196, 110, .08) 55%, transparent 74%);
+}
+.k-stage::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 118%; height: 74%;
+  transform: translate(-50%, -46%); z-index: -1; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 226, 158, .34), transparent 78%);
+  filter: blur(4px);
+}
+
+/* --- La mesa: tabla de picar que flota sobre la escena --- */
+.mesa {
+  background:
+    radial-gradient(120% 96% at 34% 8%, rgba(255, 246, 222, .95), transparent 62%),
+    radial-gradient(150% 130% at 50% 120%, rgba(214, 168, 92, .18), transparent 60%),
+    var(--card);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 5px 0 rgba(51, 48, 42, .16), 0 16px 30px -14px rgba(60, 42, 18, .5);
+}
+.slot.filled {
+  background: #fff;
+  box-shadow: inset 0 1px 6px rgba(120, 96, 52, .14), 1.5px 2px 0 rgba(51, 48, 42, .1);
+}
+
+/* clientes y platos: recortes con más cuerpo sobre la escena */
+.client {
+  background: linear-gradient(180deg, #fdf8ec, var(--card));
+  box-shadow: 2px 3px 0 rgba(51, 48, 42, .14), 0 8px 16px -10px rgba(60, 42, 18, .4);
+}
+.k-ready .ready-card {
+  background: linear-gradient(180deg, #fdf8ec, var(--card));
+  box-shadow: 2px 3px 0 rgba(51, 48, 42, .14), 0 8px 14px -10px rgba(60, 42, 18, .38);
+}
+
+/* --- Navegación flotante: un carril limpio a la derecha de la mesa.
+       La mesa se aparta un poco para que los objetos (canasta, cuaderno)
+       descansen en el mostrador sin tapar nada. --- */
+.k-stage { padding-right: 70px; }
+.float-nav {
+  right: .45rem; top: 50%; bottom: auto; transform: translateY(-50%);
+  align-items: center; gap: .55rem;
+}
+.fab { flex-direction: column; gap: .12rem; }
+.fab-icon {
+  box-shadow: 2px 3px 0 rgba(51, 48, 42, .2), 0 10px 18px -10px rgba(60, 42, 18, .5);
+}
+.fab-main .fab-icon { width: 56px; height: 56px; padding: 9px; }
+.fab-mini .fab-icon { width: 46px; height: 46px; padding: 8px; }
+.fab-tag {
+  font-family: var(--hand); font-size: .82rem; font-weight: 700; color: var(--ink);
+  line-height: 1; white-space: nowrap; opacity: .85;
+}
+.float-back {
+  box-shadow: 2px 3px 0 rgba(51, 48, 42, .2), 0 10px 18px -10px rgba(60, 42, 18, .5);
+}
+
+@media (max-height: 705px) {
+  .fab-main .fab-icon { width: 50px; height: 50px; }
   .fab-mini .fab-icon { width: 42px; height: 42px; }
 }
