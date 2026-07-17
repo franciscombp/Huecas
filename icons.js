@@ -24,7 +24,7 @@ const ICON_DEFS = `
     <stop offset="0%" stop-color="#ffffff" stop-opacity=".52"/><stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
   </radialGradient>
   <radialGradient id="ico-depth" cx="50%" cy="40%" r="63%">
-    <stop offset="52%" stop-color="#3a2c18" stop-opacity="0"/><stop offset="100%" stop-color="#3a2c18" stop-opacity=".26"/>
+    <stop offset="56%" stop-color="#5a4326" stop-opacity="0"/><stop offset="100%" stop-color="#5a4326" stop-opacity=".19"/>
   </radialGradient>
   ${_grad('g-verde', '#bcd8a4', '#97b781', '#6f8f5c')}
   ${_grad('g-verde2', '#d6e0ac', '#b9c78a', '#93a566')}
