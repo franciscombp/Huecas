@@ -56,27 +56,33 @@
     </div>
   </main>
 
-  <!-- ============= Cocina = barra de sushi (comensal arriba, tu cocina abajo) ============= -->
+  <!-- ============= Cocina = la barra de la hueca ============= -->
+  <!-- Arriba: el fondo cálido de la hueca con EL COMENSAL en la barra.
+       El mostrador (repisa 3D) sostiene los platos listos.
+       Abajo: tu cocina de papel blanco con la mesa en perspectiva. -->
   <main id="screen-cocina" class="screen screen-fixed">
     <div class="barra">
 
-      <!-- EL COMENSAL, al otro lado del mostrador -->
       <section id="comensal" class="comensal" aria-live="polite"></section>
-      <div class="barra-linea" aria-hidden="true"></div>
 
-      <!-- TU COCINA: mucho aire, la mesa al centro (el héroe) -->
+      <div class="mostrador" aria-hidden="false">
+        <div class="barra-linea" aria-hidden="true"></div>
+        <div id="ready-shelf" class="ready-strip"></div>
+      </div>
+
       <section class="cocina">
         <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
-        <div class="mesa">
-          <div id="cocina-surface" class="cocina-surface">
-            <button type="button" id="slot-0" class="slot" aria-label="Primer ingrediente"></button>
-            <span class="plus" aria-hidden="true">+</span>
-            <button type="button" id="slot-1" class="slot" aria-label="Segundo ingrediente"></button>
+        <div class="mesa-persp">
+          <div class="mesa">
+            <div id="cocina-surface" class="cocina-surface">
+              <button type="button" id="slot-0" class="slot" aria-label="Primer ingrediente"></button>
+              <span class="plus" aria-hidden="true">+</span>
+              <button type="button" id="slot-1" class="slot" aria-label="Segundo ingrediente"></button>
+            </div>
+            <div id="mesa-action" class="mesa-action"></div>
+            <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
           </div>
-          <div id="mesa-action" class="mesa-action"></div>
-          <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
         </div>
-        <div id="ready-shelf" class="ready-strip"></div>
       </section>
 
     </div>
@@ -96,22 +102,33 @@
     <p class="page-footnote">Toca una página para leerla. Las que siguen en boceto, el barrio las irá despertando.</p>
   </main>
 
-  <!-- ================= Receta ================= -->
+  <!-- ================= Receta: Moleskine de una hoja por paso ================= -->
   <main id="screen-receta" class="screen">
-    <div class="receta-page">
+    <div class="moleskine-wrap">
       <button type="button" id="receta-back" class="back-link">← El recetario</button>
-      <header class="receta-head">
-        <span id="receta-dish-icon" class="receta-dish-icon"></span>
-        <div class="receta-head-txt">
-          <h2 id="receta-title" class="hand"></h2>
-          <p id="receta-city" class="receta-city"></p>
+
+      <header class="mk-head">
+        <span id="receta-dish-icon" class="mk-dish"></span>
+        <div class="mk-head-txt">
+          <h2 id="receta-title"></h2>
+          <p id="receta-city" class="mk-city"></p>
+          <p id="receta-intro" class="mk-intro"></p>
         </div>
         <div id="receta-stamp" class="stamp" aria-hidden="true">plato<br>recuperado</div>
       </header>
-      <p id="receta-intro" class="receta-intro"></p>
-      <p id="receta-progress" class="receta-progress hand"></p>
-      <div id="receta-steps" class="receta-steps"></div>
-      <p id="receta-cultural" class="receta-cultural"></p>
+
+      <div id="mk-book" class="mk-book">
+        <span class="mk-band" aria-hidden="true"></span>
+        <span class="mk-ribbon" aria-hidden="true"></span>
+        <div id="mk-page" class="mk-page" data-ghost="1"></div>
+        <div class="mk-nav">
+          <button type="button" id="mk-prev" class="mk-arrow" aria-label="Hoja anterior">‹</button>
+          <div id="mk-dots" class="mk-dots" role="tablist"></div>
+          <button type="button" id="mk-next" class="mk-arrow" aria-label="Hoja siguiente">›</button>
+        </div>
+      </div>
+
+      <p id="receta-progress" class="mk-progress hand"></p>
       <button type="button" id="receta-cook-btn" class="btn-main wide">Intentarlo en la mesa →</button>
     </div>
   </main>
