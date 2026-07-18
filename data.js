@@ -255,15 +255,16 @@ const HUECA = {
   /* escuchar el chisme del comensal le regala paciencia */
   chismeExtraS: 14,
   chismesPorCliente: 2,
-  /* GDD §8: sin arriendo ni crisis en esta fase (el sistema queda dormido) */
-  rentEvery: 999999,
+  /* Don Aurelio pasa por el arriendo cada tantos clientes resueltos:
+     el costo debe poner en peligro la economía si no cocinas con constancia */
+  rentEvery: 14,
   rentBase: 1000, rentStep: 600,
   richPref: 0.5,
 };
 
 /* La autoridad de salubridad: 3 clientes seguidos sin servir
    y viene a revisar. Sin comida lista → clausura. */
-const SALUBRIDAD = { missLimit: 9999 };  /* dormida en el MVP */
+const SALUBRIDAD = { missLimit: 3 };
 
 /* Metas de largo plazo: la hueca nunca "se acaba". */
 const MILESTONES = [];   /* GDD §8: metas de largo plazo, fase futura */

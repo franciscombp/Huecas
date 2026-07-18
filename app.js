@@ -351,6 +351,34 @@ function banner(msg, icon = '✦') {
   clearTimeout(bannerTimer);
   bannerTimer = setTimeout(() => b.classList.remove('visible'), 3400);
 }
+/* ---------- Escenas de diálogo (novela visual) ----------
+   La cocina es el pretexto: cuando alguien tiene algo que contar
+   (chisme, memoria, historia), el juego se detiene y escucha.
+   El reloj se pausa solo (modalOpen congela la paciencia). */
+let escenaOnClose = null;
+let escenaPendiente = null;
+function showEscena(e) {
+  $('#escena-avatar').innerHTML = iconOf(e.icon);
+  $('#escena-nombre').textContent = e.nombre || '';
+  $('#escena-texto').textContent = e.texto;
+  $('#escena-ok').textContent = e.boton || 'Seguir';
+  escenaOnClose = e.onClose || null;
+  $('#modal-escena').classList.add('open');
+  sfx('tab');
+}
+function queueEscena(e) { if (modalOpen()) escenaPendiente = e; else showEscena(e); }
+function drainEscena() {
+  if (!escenaPendiente) return;
+  const e = escenaPendiente; escenaPendiente = null;
+  setTimeout(() => { if (!modalOpen()) showEscena(e); else escenaPendiente = e; }, 350);
+}
+function closeEscena() {
+  $('#modal-escena').classList.remove('open');
+  const f = escenaOnClose; escenaOnClose = null;
+  if (f) f();
+  drainEscena();
+}
+
 function toast(msg, tone = 'ink') {
   if (tone === 'seal') { banner(msg); return; }
   const t = $('#toast');
@@ -388,11 +416,15 @@ function startClock() {
 function stopClock() { clearInterval(gameClock); gameClock = null; }
 
 function clockTick() {
-  /* el tiempo SOLO corre en la cocina: el mercado y el recetario son
-     tu pausa para pensar, comprar y leer con calma */
-  if (currentScreen !== 'cocina' || state.mode !== 'servicio' || modalOpen()) { lastSpawn = lastTick = Date.now(); return; }
   const now = Date.now();
   const dt = now - lastTick; lastTick = now;
+  /* el tiempo SOLO corre en la cocina: mercado, recetario y cualquier
+     diálogo son pausa DE VERDAD — la paciencia también se congela */
+  if (currentScreen !== 'cocina' || state.mode !== 'servicio' || modalOpen()) {
+    queue.forEach(c => { if (isFinite(c.deadline)) c.deadline += dt; });
+    lastSpawn = now;
+    return;
+  }
   /* pudrir mezclas inútiles que se quedaron en el mesón (aun sin platos) */
   if (state.junkBorn) {
     for (const id in state.junkBorn) {
@@ -457,8 +489,14 @@ function chismear(id) {
   const extra = (HUECA.chismeExtraS || 14) * 1000;
   c.deadline += extra; c.total += extra / 1000;
   state.consecutiveMisses = 0;
-  sfx('tab'); buzz(15);
-  banner(pick(CHISMES), '🗨');
+  buzz(15);
+  /* el chisme es una escena: el barrio se cuenta, el juego escucha */
+  showEscena({
+    icon: c.icon, nombre: c.name,
+    texto: pick(CHISMES),
+    boton: '¡No me diga! 🫢',
+    onClose: () => { banner(`${c.name} se entretiene contándote. Te espera con más calma.`, '🗨'); renderComensal(); },
+  });
   save(); renderComensal();
 }
 
@@ -571,6 +609,8 @@ function afterResolve(missed) {
   if (currentScreen === 'cocina') { if (combining) { renderComensal(); renderReady(); } else renderCocina(); }
   if (currentScreen === 'mercado') renderMercado();
   maybeUnlockRegion();
+  /* sin corazones, la hueca no aguanta más: se baja la persiana */
+  if (missed && state.rating <= 0) { setTimeout(closeHueca, 800); return; }
   if (missed && state.consecutiveMisses >= SALUBRIDAD.missLimit) { setTimeout(salubridadVisit, 700); return; }
   if (!missed) maybeVisita();
   if (!missed && checkMilestone()) return;
@@ -1279,7 +1319,11 @@ function performCook(x, y) {
     const guest = storyGuest();
     if (guest && guest.memorias && guest.memorias.length) {
       const linea = guest.memorias.shift();
-      setTimeout(() => toast(linea, 'ink'), 1400);
+      /* la memoria es una escena: la visita habla mientras cocinas,
+         y el juego se detiene a escucharla */
+      setTimeout(() => queueEscena({
+        icon: guest.icon, nombre: guest.name, texto: linea, boton: '…',
+      }), 1000);
     }
     surface.classList.add('success'); buzz([30, 40, 60]); sfx('cook');
     const p = centerOf('#cocina-surface'); if (p) burst(p.x, p.y - 10, ['#e0b45c', '#9dbd8a', '#fff3d0']);
@@ -1359,6 +1403,7 @@ function closePaso() {
   $('#modal-paso').classList.remove('open');
   if (currentScreen === 'cocina') renderCocina();
   if (currentScreen === 'receta') renderReceta();
+  drainEscena();
 }
 
 let celebratedCuaderno = null;
@@ -1382,6 +1427,7 @@ function closeCelebration() {
   $('#modal-celebra').classList.remove('open');
   if (state.firstDishPending) { state.firstDishPending = false; save(); toast(MICROCOPY.firstDish, 'seal'); lastSpawn = Date.now(); }
   if (celebratedCuaderno) openReceta(celebratedCuaderno); else show('cocina');
+  drainEscena();
 }
 
 /* ============================================================
@@ -1558,6 +1604,7 @@ function bindEvents() {
     zone.addEventListener('click', () => { if (combining) return; if (!slots[0]) openPicker(0); });
   }
 
+  $('#escena-ok').addEventListener('click', closeEscena);
   $('#arriendo-pay').addEventListener('click', resolveRent);
   $('#cierre-reopen').addEventListener('click', reopenHueca);
   $('#salubridad-ok').addEventListener('click', resolveSalubridad);

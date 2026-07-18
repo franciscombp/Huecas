@@ -236,9 +236,9 @@ svg { display: block; width: 100%; height: 100%; }
 /* --- LA HUECA: fondo cálido donde vive el comensal --- */
 .comensal {
   flex-shrink: 0;
-  padding: calc(var(--hud-h) + env(safe-area-inset-top) + .2rem) 1.1rem 3.2rem;
+  padding: calc(var(--hud-h) + env(safe-area-inset-top) + .2rem) 1.1rem 1rem;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .3rem;
-  min-height: 196px;
+  min-height: 172px;
   background:
     radial-gradient(90% 70% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
     linear-gradient(180deg, var(--hueca) 0%, var(--hueca-2) 100%);
@@ -339,7 +339,7 @@ svg { display: block; width: 100%; height: 100%; }
 
 /* --- EL MOSTRADOR: la repisa que separa los dos mundos.
        Los platos listos se paran encima, como en la vitrina. --- */
-.mostrador { flex-shrink: 0; position: relative; z-index: 3; padding: 0 1rem; }
+.mostrador { flex-shrink: 0; position: relative; z-index: 3; padding: 0 1rem; display: flex; flex-direction: column; background: linear-gradient(180deg, var(--hueca-2) 0%, var(--hueca-2) 46%, transparent 46%); }
 .barra-linea {
   height: 20px; border-radius: 4px;
   background: linear-gradient(180deg, #ffffff 0%, #f4f1ea 42%, #e3dfd4 46%, #d8d3c5 100%);
@@ -353,13 +353,14 @@ svg { display: block; width: 100%; height: 100%; }
   background: radial-gradient(50% 100% at 50% 0%, rgba(45,38,25,.13), transparent 75%);
   pointer-events: none;
 }
-/* platos listos DE PIE sobre el mostrador (con scroll si son muchos) */
+/* platos listos DE PIE sobre el mostrador: en flujo (ocupan su propio
+   espacio, jamás tapan al comensal), pisando la repisa con -7px */
 .ready-strip {
-  position: absolute; left: .6rem; right: .6rem; bottom: calc(100% - 7px);
+  position: relative; z-index: 2;
   display: none; align-items: flex-end; gap: 1rem;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   padding: .3rem .4rem 0;
-  pointer-events: auto;
+  margin-bottom: -7px;
 }
 .ready-strip::-webkit-scrollbar { height: 0; }
 .ready-strip.has { display: flex; }
@@ -1016,7 +1017,8 @@ svg { display: block; width: 100%; height: 100%; }
    COACH y TOAST
    ============================================================ */
 
-.coach { position: absolute; z-index: 58; left: 50%; transform: translateX(-50%); bottom: calc(110px + env(safe-area-inset-bottom)); max-width: min(300px, 74vw); pointer-events: none; }
+/* el coach vive en el borde inferior, nunca sobre los botones */
+.coach { position: absolute; z-index: 58; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom)); max-width: min(320px, 80vw); pointer-events: none; }
 .coach-bubble {
   font-family: var(--hand); font-size: 1.3rem; line-height: 1.3; color: #fff; text-align: center;
   background: rgba(47, 43, 37, .92);
@@ -1026,6 +1028,42 @@ svg { display: block; width: 100%; height: 100%; }
   animation: coach-float 3s ease-in-out infinite;
 }
 @keyframes coach-float { 50% { transform: translateY(-4px); } }
+
+/* ---------- Escena de diálogo (novela visual) ----------
+   El personaje al frente, su voz en manuscrita grande, y un solo
+   botón: el juego espera a que termines de escuchar. */
+.modal.escena { align-items: flex-end; padding: 0 0 0; }
+.escena-card {
+  width: 100%; max-width: var(--frame); margin: 0 auto;
+  position: relative;
+  background: linear-gradient(180deg, #ffffff, #faf8f3);
+  border: 1px solid var(--line); border-bottom: none;
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -20px 60px -18px rgba(45,38,25,.5), var(--emboss);
+  padding: 3.2rem 1.4rem calc(1.2rem + env(safe-area-inset-bottom));
+  animation: escena-up .4s cubic-bezier(.2, 1.05, .3, 1) both;
+}
+@keyframes escena-up { from { transform: translateY(55%); opacity: .3; } }
+.escena-avatar {
+  position: absolute; top: -46px; left: 1.3rem;
+  width: 92px; height: 92px; padding: 10px;
+  background: linear-gradient(180deg, #ffffff, #f4f1e9);
+  border: 1px solid var(--line); border-radius: 50%;
+  box-shadow: var(--emboss), 0 14px 30px -12px rgba(45,38,25,.45);
+}
+.escena-nombre {
+  position: absolute; top: -14px; left: calc(1.3rem + 100px);
+  font-size: .78rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--rojo);
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  padding: .25rem .8rem;
+  box-shadow: var(--emboss), 0 4px 10px -4px rgba(45,38,25,.3);
+}
+.escena-texto {
+  font-family: var(--hand); font-size: 1.55rem; line-height: 1.45; color: var(--ink);
+  min-height: 4.2rem; margin-bottom: 1rem;
+}
+.escena-card .btn-main.wide { font-size: 1.1rem; }
 
 /* banner grande estilo Duolingo: lo importante se VE */
 .banner {
@@ -1105,7 +1143,7 @@ svg { display: block; width: 100%; height: 100%; }
 
 @media (max-height: 720px) {
   html { font-size: 16px; }
-  .comensal { min-height: 168px; padding-bottom: 2.9rem; }
+  .comensal { min-height: 150px; }
   .com-avatar { width: 60px; height: 60px; }
   .slot { width: clamp(104px, 30vw, 132px); height: clamp(104px, 30vw, 132px); }
   .mesa { padding: .9rem .8rem .8rem; }
