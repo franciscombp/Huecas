@@ -283,7 +283,7 @@ function show(screen) {
   if (screen === 'mercado') renderMercado();
   window.scrollTo(0, 0);
 }
-function openReceta(cid) { recetaOpen = cid; show('receta'); }
+function openReceta(cid) { if (recetaOpen !== cid) mkIdx = null; recetaOpen = cid; show('receta'); }
 function goCook(cid) { state.active = cid; save(); show('cocina'); }
 
 /* ---------- HUD ---------- */
@@ -318,7 +318,7 @@ function bumpHearts(dir) {
 }
 /* corazón que sube desde la ficha del cliente servido */
 function popServe(id) {
-  const card = document.querySelector(`.com-card[data-id="${id}"]`);
+  const card = document.querySelector(`.com-scene[data-id="${id}"]`);
   if (!card) return;
   const r = card.getBoundingClientRect();
   const b = el('span', 'serve-burst', iconOf('corazon'));
@@ -447,7 +447,7 @@ function serveCustomer(id) {
   if (idx < 0) return;
   const c = queue[idx];
   if (count(c.dish) < 1) { toast('Todavía no tienes ese plato listo.', 'soft'); return; }
-  const at = centerOf(`.com-card[data-id="${id}"]`) || centerOf('.mesa');
+  const at = centerOf(`.com-scene[data-id="${id}"]`) || centerOf('.mesa');
   addItem(c.dish, -1);
   popServe(id);
   if (c.story) { resolveVisita(c, idx, at); return; }
@@ -711,10 +711,13 @@ function renderShelf() {
   rack.innerHTML = '';
   REGION_ORDER.filter(r => state.regionsUnlocked.includes(r)).forEach(r => {
     const meta = REGIONS[r];
-    rack.appendChild(el('h3', 'shelf-region hand', `${meta.name} <small>· ${meta.tagline}</small>`));
+    /* cada región es UNA REPISA: etiqueta vertical + libros de pie */
+    const row = el('section', 'shelf-row');
+    row.appendChild(el('h3', 'shelf-region', meta.name));
     const grid = el('div', 'shelf-grid');
     regionCuadernos(r).forEach(cid => grid.appendChild(bookCard(cid)));
-    rack.appendChild(grid);
+    row.appendChild(grid);
+    rack.appendChild(row);
   });
   const locked = REGION_ORDER.filter(r => !state.regionsUnlocked.includes(r));
   if (locked.length) {
@@ -767,6 +770,17 @@ function pairIcons(step) {
     <span class="mini-item res">${iconOf(step.result)}<small>${ITEMS[step.result].name}</small></span>`;
 }
 
+/* La receta es un MOLESKINE: una hoja por paso. Se pasa de hoja con
+   swipe o flechas; la última hoja (si el plato está a color) es la
+   memoria cultural de la abuela. */
+let mkIdx = null;
+
+function mkPages(c, cid) {
+  const pages = c.steps.map(s => ({ type: 'step', s }));
+  if (isComplete(cid) && c.cultural) pages.push({ type: 'memoria' });
+  return pages;
+}
+
 function renderReceta() {
   const cid = recetaOpen || state.active;
   recetaOpen = cid;
@@ -778,44 +792,89 @@ function renderReceta() {
   dIcon.innerHTML = iconOf(c.dish);
   dIcon.classList.toggle('boceto', !isColored(c.dish));
   $('#receta-intro').textContent = c.intro;
-  const cult = $('#receta-cultural');
-  if (cult) { cult.textContent = complete && c.cultural ? c.cultural : ''; cult.style.display = complete && c.cultural ? '' : 'none'; }
   $('#receta-stamp').style.display = complete ? '' : 'none';
-  const list = $('#receta-steps');
-  list.innerHTML = '';
-  let firstPending = true;
-  c.steps.forEach((step, i) => {
-    const done = knows(step.result);
-    const revealed = state.revealed.includes(step.result);
-    const isCurrent = !done && firstPending && !step.variant;
-    const row = el('div', 'step' + (done ? ' done' : '') + (isCurrent ? ' current' : '') + (step.variant ? ' variant' : ''));
-    if (!done && !step.variant && firstPending) firstPending = false;
-    if (done) {
-      row.innerHTML = `<span class="step-num">${step.variant ? '✳' : i + 1}</span>
-        <div class="step-body"><p class="step-line hand">${step.line}</p><div class="step-icons">${pairIcons(step)}</div></div>
-        <span class="step-check">✓</span>`;
+  /* la cinta marcapáginas: el cuaderno siempre se abre en la hoja de hoy */
+  const pages = mkPages(c, cid);
+  const curStep = c.steps.findIndex(s => !knows(s.result) && !s.variant);
+  mkIdx = curStep === -1 ? pages.length - 1 : curStep;
+  renderMkPage(false);
+  $('#receta-progress').textContent = complete ? 'Receta recuperada. La clientela la pide.' : `${stepsDone(cid)} de ${mainSteps(cid).length} pasos descifrados`;
+  $('#receta-cook-btn').onclick = () => goCook(cid);
+}
+
+function renderMkPage(animate = true, dir = 1) {
+  const cid = recetaOpen;
+  const c = CUADERNOS[cid];
+  const pages = mkPages(c, cid);
+  const page = $('#mk-page');
+
+  const paint = () => {
+    const p = pages[mkIdx];
+    if (p.type === 'memoria') {
+      page.dataset.ghost = '❦';
+      page.innerHTML = `
+        <p class="mk-state mem">la memoria de la abuela</p>
+        <p class="mk-memoria">${c.cultural}</p>
+        <p class="mk-firma hand">— Delfina</p>`;
     } else {
-      row.innerHTML = `<span class="step-num">${step.variant ? '✳' : i + 1}</span>
-        <div class="step-body">
+      const step = p.s;
+      const i = c.steps.indexOf(step);
+      const done = knows(step.result);
+      const revealed = state.revealed.includes(step.result);
+      const isCurrent = i === c.steps.findIndex(s => !knows(s.result) && !s.variant);
+      page.dataset.ghost = step.variant ? '✳' : String(i + 1);
+      if (done) {
+        page.innerHTML = `
+          <p class="mk-state done">✓ descifrado</p>
+          <p class="step-line">${step.line}</p>
+          <div class="step-icons">${pairIcons(step)}</div>`;
+      } else {
+        page.innerHTML = `
+          <p class="mk-state">${isCurrent ? 'la hoja de hoy' : 'aún en tinta invisible'}</p>
           <p class="step-hint hand">“${step.hint}”</p>
           ${step.shopNote ? `<p class="step-shopnote">${step.shopNote}</p>` : ''}
           ${revealed ? `<div class="step-icons">${pairIcons(step)}</div>` : ''}
           <div class="step-actions">
-            <button type="button" class="btn-main small try-btn">Intentar en la cocina</button>
+            <button type="button" class="btn-main small try-btn">Intentar en la mesa</button>
             ${!revealed ? `<button type="button" class="btn-ghost small reveal">Espiar <small>S/ ${S(REVEAL_COST)}</small></button>` : ''}
-          </div>
-        </div>`;
-      row.querySelector('.try-btn').addEventListener('click', () => goCook(cid));
-      const rev = row.querySelector('.reveal');
-      if (rev) rev.addEventListener('click', () => {
-        if (state.coins < REVEAL_COST) { toast(MICROCOPY.noCoins, 'soft'); return; }
-        addCoins(-REVEAL_COST); state.revealed.push(step.result); save(); renderReceta();
-      });
+          </div>`;
+        page.querySelector('.try-btn').addEventListener('click', () => goCook(cid));
+        const rev = page.querySelector('.reveal');
+        if (rev) rev.addEventListener('click', () => {
+          if (state.coins < REVEAL_COST) { toast(MICROCOPY.noCoins, 'soft'); return; }
+          addCoins(-REVEAL_COST); state.revealed.push(step.result); save(); renderMkPage(false);
+        });
+      }
     }
-    list.appendChild(row);
-  });
-  $('#receta-progress').textContent = complete ? 'Receta recuperada. La clientela la pide.' : `${stepsDone(cid)} de ${mainSteps(cid).length} pasos`;
-  $('#receta-cook-btn').onclick = () => goCook(cid);
+    const dots = $('#mk-dots'); dots.innerHTML = '';
+    pages.forEach((pp, i) => {
+      const d = el('button', 'mk-dot'
+        + (i === mkIdx ? ' on' : '')
+        + (pp.type === 'step' && knows(pp.s.result) ? ' done' : '')
+        + (pp.type === 'memoria' ? ' mem' : ''));
+      d.type = 'button';
+      d.setAttribute('aria-label', pp.type === 'memoria' ? 'La memoria' : `Hoja ${i + 1}`);
+      d.addEventListener('click', () => mkGo(i - mkIdx));
+      dots.appendChild(d);
+    });
+    $('#mk-prev').disabled = mkIdx === 0;
+    $('#mk-next').disabled = mkIdx === pages.length - 1;
+  };
+
+  if (!animate) { page.classList.remove('turn-l', 'turn-r'); paint(); return; }
+  page.classList.remove('turn-l', 'turn-r'); void page.offsetWidth;
+  page.classList.add(dir > 0 ? 'turn-r' : 'turn-l');
+  setTimeout(paint, 150);          /* el contenido cambia a mitad del giro */
+}
+
+function mkGo(d) {
+  if (!d || !recetaOpen) return;
+  const pages = mkPages(CUADERNOS[recetaOpen], recetaOpen);
+  const n = Math.min(Math.max(mkIdx + d, 0), pages.length - 1);
+  if (n === mkIdx) return;
+  mkIdx = n;
+  sfx('tab'); buzz(10);
+  renderMkPage(true, d);
 }
 
 /* ============================================================
@@ -853,25 +912,32 @@ function renderComensal() {
   const have = count(front.dish) >= 1;
   box.className = 'comensal' + (front.story ? ' story' : '') + (have ? ' ready' : '');
 
-  const card = el('div', 'com-card');
-  card.dataset.id = front.id;
+  /* el comensal es un PERSONAJE en la barra: avatar grande con globo
+     de pedido (como ordenar de verdad), no una tarjeta de lista */
+  const scene = el('div', 'com-scene');
+  scene.dataset.id = front.id;
   const frac = front.story ? 1 : Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
-  card.innerHTML = `
-    ${front.story ? '<span class="com-crown" aria-hidden="true">★</span>' : ''}
-    <span class="com-avatar">${iconOf(front.icon)}</span>
-    <div class="com-txt">
+  scene.innerHTML = `
+    <div class="com-who">
+      ${front.story ? '<span class="com-crown" aria-hidden="true">★</span>' : ''}
+      ${waiting > 0 ? `<span class="com-waiting" title="${waiting} esperando su turno">+${waiting}</span>` : ''}
+      <span class="com-avatar">${iconOf(front.icon)}</span>
       <span class="com-name">${front.name}</span>
-      <span class="com-want"><span class="com-dish">${iconOf(front.dish)}</span>quiere <b>${ITEMS[front.dish].name}</b></span>
+    </div>
+    <div class="com-order">
+      <div class="com-bubble">
+        <span class="com-dish">${iconOf(front.dish)}</span>
+        <span class="com-ask">${ITEMS[front.dish].name}<small>${front.story ? 'no se irá sin probarlo' : 'por favorcito'}</small></span>
+      </div>
       ${front.story
-        ? '<span class="com-wait hand">no se irá sin él</span>'
+        ? ''
         : `<span class="com-bar-wrap"><span class="com-bar" style="transform:scaleX(${frac})"></span></span>`}
     </div>
-    <button type="button" class="com-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : 'Cocínalo'}</button>`;
-  if (!front.story) inkState(card.querySelector('.com-avatar'), front.icon);
-  card.querySelector('.com-serve').addEventListener('click', () => { if (have) serveCustomer(front.id); });
-  box.appendChild(card);
-
-  if (waiting > 0) box.appendChild(el('span', 'com-waiting hand', `+${waiting} esperando su turno`));
+    <button type="button" class="com-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : '· · ·'}</button>`;
+  if (!front.story) inkState(scene.querySelector('.com-avatar'), front.icon);
+  inkState(scene.querySelector('.com-dish'), front.dish);
+  scene.querySelector('.com-serve').addEventListener('click', () => { if (have) serveCustomer(front.id); });
+  box.appendChild(scene);
 }
 
 function itemCard(id) {
@@ -1416,6 +1482,17 @@ function bindEvents() {
   $('#fab-cuaderno').addEventListener('click', () => { sfx('tab'); show('shelf'); });
   $('#float-back').addEventListener('click', () => { sfx('tab'); show(currentScreen === 'receta' ? 'shelf' : 'cocina'); });
   $('#receta-back').addEventListener('click', () => show('shelf'));
+  /* Moleskine: pasar de hoja con flechas o con el dedo */
+  $('#mk-prev').addEventListener('click', () => mkGo(-1));
+  $('#mk-next').addEventListener('click', () => mkGo(1));
+  const mkBook = $('#mk-book');
+  let mkSwipeX = null;
+  mkBook.addEventListener('touchstart', (e) => { mkSwipeX = e.touches[0].clientX; }, { passive: true });
+  mkBook.addEventListener('touchend', (e) => {
+    if (mkSwipeX === null) return;
+    const dx = e.changedTouches[0].clientX - mkSwipeX; mkSwipeX = null;
+    if (Math.abs(dx) > 42) mkGo(dx < 0 ? 1 : -1);
+  }, { passive: true });
   $('#hud-mode').addEventListener('click', toggleMode);
   $('#quick-cocina').addEventListener('click', () => show('cocina'));
   $('#mesa-clear').addEventListener('click', clearMesa);
