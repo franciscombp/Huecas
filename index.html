@@ -44,7 +44,7 @@
         <h1>Huecas</h1>
         <p class="cover-sub">el recetario de la abuela</p>
         <div class="cover-icons" aria-hidden="true">
-          <span data-icon="bolon"></span><span data-icon="bolon_huevo"></span><span data-icon="tigrillo"></span>
+          <span data-icon="bolon"></span><span data-icon="bolon_mixto"></span><span data-icon="tigrillo"></span>
         </div>
         <p class="cover-quote">Tu abuela ha enfermado y te encarga su hueca. Te deja un cuaderno de recetas escrito en acertijos, dibujado a mano — casi todo en blanco y negro. Cocina, descífralo, y devuélvele el color plato por plato.</p>
         <div class="cover-actions">
@@ -75,9 +75,7 @@
         <div class="mesa-persp">
           <div class="mesa">
             <div id="cocina-surface" class="cocina-surface">
-              <button type="button" id="slot-0" class="slot" aria-label="Primer ingrediente"></button>
-              <span class="plus" aria-hidden="true">+</span>
-              <button type="button" id="slot-1" class="slot" aria-label="Segundo ingrediente"></button>
+              <button type="button" id="slot-0" class="slot" aria-label="Lo que está en la mesa"></button>
             </div>
             <div id="mesa-action" class="mesa-action"></div>
             <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
@@ -205,9 +203,9 @@
     <div class="paso-card intro-card">
       <h3 class="paso-name hand">Tu hueca costeña</h3>
       <ul class="intro-list">
-        <li><span class="intro-ic" data-icon="tab_cocina"></span><b>Descubre.</b> Pon dos cosas en la mesa y pulsa la acción (pelar, freír, majar…). El resultado se queda listo para el siguiente paso.</li>
-        <li><span class="intro-ic" data-icon="corazon"></span><b>Atiende la cola.</b> Los clientes llegan sin parar y piden lo que sabes hacer. Sírveles a tiempo lo que acabas de cocinar.</li>
-        <li><span class="intro-ic" data-icon="arriendo"></span><b>Subsiste.</b> El arriendo sube cada mes: con puro bolón no alcanza. Aprende el tigrillo y platos más caros.</li>
+        <li><span class="intro-ic" data-icon="tab_cocina"></span><b>Descubre.</b> Pon algo en la mesa y elige qué hacerle: agregar otra cosa o usar una acción aprendida (pelar, freír, majar…).</li>
+        <li><span class="intro-ic" data-icon="corazon"></span><b>Atiende la barra.</b> La gente llega sin parar. El tiempo solo corre aquí en la cocina: el mercado y el cuaderno son tu pausa.</li>
+        <li><span class="intro-ic" data-icon="cuaderno"></span><b>Conversa.</b> Si escuchas el chisme del comensal, te espera con más paciencia. Cada cliente que desatiendes pone más brava a la fila.</li>
       </ul>
       <p class="intro-tip hand">¿Sin apuros? Toca <b>Servicio/Tranquilo</b> arriba para explorar recetas sin clientela.</p>
       <button type="button" id="intro-close" class="btn-main wide">¡A cocinar!</button>
@@ -305,6 +303,7 @@
     </div>
   </div>
 
+  <div id="banner" class="banner" role="status" aria-live="polite"></div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <!-- Navegación flotante contextual (GDD §4.2): objetos del cuaderno -->

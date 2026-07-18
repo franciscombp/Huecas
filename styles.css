@@ -236,9 +236,9 @@ svg { display: block; width: 100%; height: 100%; }
 /* --- LA HUECA: fondo cálido donde vive el comensal --- */
 .comensal {
   flex-shrink: 0;
-  padding: calc(var(--hud-h) + env(safe-area-inset-top) + .2rem) 1.1rem 3.4rem;
+  padding: calc(var(--hud-h) + env(safe-area-inset-top) + .2rem) 1.1rem 3.2rem;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: .3rem;
-  min-height: 172px;
+  min-height: 196px;
   background:
     radial-gradient(90% 70% at 50% 0%, rgba(255,255,255,.55), transparent 60%),
     linear-gradient(180deg, var(--hueca) 0%, var(--hueca-2) 100%);
@@ -323,6 +323,20 @@ svg { display: block; width: 100%; height: 100%; }
   box-shadow: none; text-shadow: none; cursor: default;
 }
 
+/* conversar con el comensal: chisme (+paciencia) o despedirlo */
+.com-chat { display: flex; gap: .45rem; margin: .1rem .2rem 0; }
+.chat-btn {
+  padding: .28rem .6rem; font-family: var(--hand); font-size: .98rem; font-weight: 600;
+  color: #6d5f47;
+  background: rgba(255,255,254,.85);
+  border: 1px solid rgba(60,55,45,.16); border-radius: 999px;
+  box-shadow: 0 2px 6px -2px rgba(70,50,20,.3);
+  white-space: nowrap;
+}
+.chat-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(45,38,25,.15); }
+.chat-btn.chisme[disabled] { opacity: .4; cursor: default; }
+.chat-btn.adios { color: #a06a52; }
+
 /* --- EL MOSTRADOR: la repisa que separa los dos mundos.
        Los platos listos se paran encima, como en la vitrina. --- */
 .mostrador { flex-shrink: 0; position: relative; z-index: 3; padding: 0 1rem; }
@@ -339,15 +353,21 @@ svg { display: block; width: 100%; height: 100%; }
   background: radial-gradient(50% 100% at 50% 0%, rgba(45,38,25,.13), transparent 75%);
   pointer-events: none;
 }
-/* platos listos DE PIE sobre el mostrador */
+/* platos listos DE PIE sobre el mostrador (con scroll si son muchos) */
 .ready-strip {
   position: absolute; left: .6rem; right: .6rem; bottom: calc(100% - 7px);
-  display: none; justify-content: center; align-items: flex-end; gap: 1rem;
-  pointer-events: none;
+  display: none; align-items: flex-end; gap: 1rem;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: .3rem .4rem 0;
+  pointer-events: auto;
 }
+.ready-strip::-webkit-scrollbar { height: 0; }
 .ready-strip.has { display: flex; }
+/* centrados cuando caben, scroll cuando no */
+.ready-chip:first-of-type { margin-left: auto; }
+.ready-chip:last-of-type { margin-right: auto; }
 .ready-label { display: none; }
-.ready-chip { display: flex; flex-direction: column; align-items: center; gap: .1rem; pointer-events: auto; }
+.ready-chip { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: .1rem; pointer-events: auto; }
 .ready-chip .item-card { width: auto; padding: 0; background: none; border: none; box-shadow: none; }
 .ready-chip .item-card .icon {
   width: 56px; height: 56px;
@@ -416,7 +436,7 @@ svg { display: block; width: 100%; height: 100%; }
 @keyframes pop { 40% { transform: scale(1.05); } }
 
 .slot {
-  width: clamp(96px, 27vw, 126px); height: clamp(96px, 27vw, 126px);
+  width: clamp(118px, 36vw, 158px); height: clamp(118px, 36vw, 158px);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
   background: var(--ivory);
   border: 2px dashed rgba(60,55,45,.22);
@@ -453,6 +473,13 @@ svg { display: block; width: 100%; height: 100%; }
 .cook-btn .cook-ic { width: 1.6rem; height: 1.6rem; }
 .cook-btn.known { background: linear-gradient(180deg, #7da272, var(--verde) 45%, var(--verde-d)); border-color: rgba(60,90,50,.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 3px rgba(45,38,25,.18), 0 10px 24px -8px rgba(76,106,69,.55); }
 .cook-btn.guardar { background: var(--btn-white); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--emboss), 0 2px 6px rgba(45,38,25,.14); text-shadow: none; font-size: 1rem; }
+/* "+ Agregar" convive con las acciones aprendidas, en blanco embosado */
+.cook-btn.add {
+  background: var(--btn-white); color: var(--ink); border: 1px solid var(--line);
+  box-shadow: var(--emboss), 0 2px 6px rgba(45,38,25,.14); text-shadow: none;
+  font-size: 1.05rem;
+}
+.cook-btn.add .cook-ic { display: none; }
 .mesa-nope { font-family: var(--hand); font-size: 1.2rem; color: var(--ink-2); }
 .mesa-clear { font-size: .85rem; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; margin-top: .5rem; }
 
@@ -861,7 +888,8 @@ svg { display: block; width: 100%; height: 100%; }
 .sheet-body { overflow-y: auto; min-height: 0; }
 .sheet-sec { margin-bottom: .8rem; }
 .sheet-sec-title { font-size: .7rem; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-2); font-weight: 500; margin-bottom: .45rem; }
-.sheet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem; }
+.sheet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: .55rem; }
+.sheet-grid .item-card { min-width: 0; }
 .sheet-empty { color: var(--ink-2); font-size: 1.1rem; }
 .pick-card .name { font-size: .74rem; }
 .pick-card.needed { border-color: rgba(95,127,86,.6); box-shadow: var(--emboss), 0 0 0 3px rgba(143,174,126,.3), 0 4px 12px -6px rgba(45,38,25,.2); }
@@ -999,6 +1027,32 @@ svg { display: block; width: 100%; height: 100%; }
 }
 @keyframes coach-float { 50% { transform: translateY(-4px); } }
 
+/* banner grande estilo Duolingo: lo importante se VE */
+.banner {
+  position: absolute; left: 50%; transform: translateX(-50%) translateY(-140%);
+  top: calc(env(safe-area-inset-top) + 8px); z-index: 97;
+  width: min(420px, calc(100% - 1.6rem));
+  display: flex; align-items: center; gap: .7rem;
+  background: linear-gradient(180deg, #ffffff, #faf8f3);
+  border: 1px solid var(--line); border-left: 5px solid var(--rojo);
+  border-radius: 16px;
+  box-shadow: var(--emboss), 0 18px 44px -14px rgba(45,38,25,.5);
+  padding: .75rem .95rem;
+  font-size: 1.02rem; font-weight: 600; line-height: 1.4; color: var(--ink);
+  pointer-events: none; opacity: 0;
+  transition: transform .38s cubic-bezier(.2, 1.15, .35, 1), opacity .3s ease;
+}
+.banner.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.banner .banner-ic {
+  flex-shrink: 0; width: 2.1rem; height: 2.1rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; color: #fff;
+  background: linear-gradient(180deg, #d95c42, var(--rojo-d));
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 2px 6px rgba(200,68,44,.4);
+}
+.banner .banner-txt { min-width: 0; }
+
 .toast {
   position: absolute; left: 50%; transform: translateX(-50%) translateY(16px);
   bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 95;
@@ -1051,9 +1105,9 @@ svg { display: block; width: 100%; height: 100%; }
 
 @media (max-height: 720px) {
   html { font-size: 16px; }
-  .comensal { min-height: 148px; padding-bottom: 3rem; }
-  .com-avatar { width: 64px; height: 64px; }
-  .slot { width: clamp(86px, 24vw, 108px); height: clamp(86px, 24vw, 108px); }
+  .comensal { min-height: 168px; padding-bottom: 2.9rem; }
+  .com-avatar { width: 60px; height: 60px; }
+  .slot { width: clamp(104px, 30vw, 132px); height: clamp(104px, 30vw, 132px); }
   .mesa { padding: .9rem .8rem .8rem; }
   .ready-chip .item-card .icon { width: 48px; height: 48px; }
   .riddle-hint { font-size: 1.4rem; }
@@ -1091,7 +1145,6 @@ svg { display: block; width: 100%; height: 100%; }
   .fab-main .fab-icon { width: 64px; height: 64px; }
   .fab-mini .fab-icon { width: 52px; height: 52px; }
   .fab-tag { font-size: .84rem; }
-  .sheet-grid { grid-template-columns: repeat(6, 1fr); }
 }
 
 @media (min-width: 1080px) {

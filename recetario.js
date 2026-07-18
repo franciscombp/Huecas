@@ -35,8 +35,8 @@ const GAME_DATA = {
       "nota": "De mesa, blanco y salado." },
     { "id": "huevo", "nombre": "Huevo",         "estado_inicial": "boceto", "costo_mercado": 200,
       "nota": "De campo, yema naranja." },
-    { "id": "cafe",  "nombre": "Café molido",   "estado_inicial": "boceto", "costo_mercado": 300,
-      "nota": "De Zaruma, tostado oscuro. Se pasa a la olla, con chuspa." }
+    { "id": "cerdo", "nombre": "Carne de cerdo", "estado_inicial": "boceto", "costo_mercado": 500,
+      "nota": "Con su grasita, para el chicharrón. Casi te olvidas de comprarla." }
   ],
 
   "recetas": [
@@ -88,33 +88,32 @@ const GAME_DATA = {
       "precio_venta": 2500,
       "ciudad": "Guayaquil",
       "acento": "#e0a45c",
-      "intro": "Una página con manchas de café. La abuela lo servía completo: bolón, huevo frito encima y café pasado al lado. Así lo pedían los de confianza.",
+      "intro": "Una página con manchas de manteca. El mixto de verdad: la misma bola de verde, pero con queso Y chicharrón adentro. Así lo pedían los de confianza.",
       "ingredientes": [
         { "id": "verde", "cantidad": 2 },
         { "id": "queso", "cantidad": 1 },
-        { "id": "huevo", "cantidad": 1 },
-        { "id": "cafe",  "cantidad": 1 }
+        { "id": "cerdo", "cantidad": 1 }
       ],
       "pasos": [
-        { "orden": 1, "accion": "freir", "ingrediente_objetivo": "huevo",
-          "acertijo": "Rompe su casa redonda y amanece hecho sol.",
-          "resultado": "huevo_frito",
-          "receta_real": "1. Fríe un huevo en la sartén con poquito aceite: la clara cuajada y la yema tierna, mirando arriba." },
-        { "orden": 2, "accion": "cocer", "ingrediente_objetivo": "cafe",
-          "acertijo": "Grano oscuro y agua que pasa: despierta hasta al que no quiere.",
-          "resultado": "cafe_pasado",
-          "receta_real": "2. La cafetera de la abuela ya no sirve: hierve agua en la olla y pasa el café por la chuspa, como toda la vida." },
-        { "orden": 3, "accion": "montar", "ingrediente_objetivo": "bolon", "ingrediente_secundario": "huevo_frito",
-          "acertijo": "El sol se recuesta sobre la bola dorada.",
-          "resultado": "bolon_huevo",
-          "receta_real": "3. Sobre un bolón recién hecho, acuesta el huevo frito con la yema entera. Sal al gusto." },
-        { "orden": 4, "accion": "acompanar", "ingrediente_objetivo": "bolon_huevo", "ingrediente_secundario": "cafe_pasado",
-          "acertijo": "Ningún desayuno camina solo: siempre con su sombra caliente.",
+        { "orden": 1, "accion": "freir", "ingrediente_objetivo": "cerdo",
+          "acertijo": "Canta en su propia grasa hasta volverse crocante.",
+          "resultado": "chicharron",
+          "receta_real": "1. Troza la carne de cerdo y dórala en la sartén en su propia grasa, sin apuro, hasta que el chicharrón cante y quede crocante." },
+        { "orden": 2, "accion": "rellenar", "ingrediente_objetivo": "masa_verde", "ingrediente_secundario": "chicharron",
+          "acertijo": "La masa esconde ahora un secreto que cruje.",
+          "resultado": "masa_mixta",
+          "receta_real": "2. Desmenuza el chicharrón y mézclalo con la masa de verde majado, repartiéndolo bien." },
+        { "orden": 3, "accion": "rellenar", "ingrediente_objetivo": "masa_mixta", "ingrediente_secundario": "queso",
+          "acertijo": "Y el corazón blanco se suma a la fiesta.",
+          "resultado": "bolon_mixto_crudo",
+          "receta_real": "3. Forma las bolas y esconde queso fresco en el centro: mixto es eso — queso y chicharrón en la misma bola." },
+        { "orden": 4, "accion": "freir", "ingrediente_objetivo": "bolon_mixto_crudo",
+          "acertijo": "El calor sella el pacto de los dos corazones.",
           "resultado": "bolon_mixto",
-          "receta_real": "4. Sirve el plato con la taza de café pasado al lado. Ese conjunto —decía la abuela— no es comida: es compañía." }
+          "receta_real": "4. Dóralas en la sartén girándolas hasta que la costra cruja. Se sirve que queme la mano, decía la abuela." }
       ],
       "tarjeta": {
-        "texto_cultural": "El “mixto” de las huecas costeñas es el desayuno completo: bolón con huevo frito encima y café pasado por chuspa. Es el plato de los que madrugan de verdad —choferes, comerciantes, estudiantes— y de los domingos en familia."
+        "texto_cultural": "El bolón “mixto” de las huecas costeñas lleva los dos rellenos a la vez: queso fresco y chicharrón. Es el favorito de los que madrugan con hambre de verdad — choferes, comerciantes, estibadores — y se paga con gusto porque llena hasta el almuerzo."
       }
     },
 
@@ -149,22 +148,20 @@ const GAME_DATA = {
   ],
 
   "resultados": [
-    { "id": "verde_pelado",  "nombre": "Verde pelado",    "tipo": "prep" },
-    { "id": "verde_cocido",  "nombre": "Verde cocido",    "tipo": "prep" },
-    { "id": "masa_verde",    "nombre": "Masa de verde",   "tipo": "prep" },
-    { "id": "bolon_crudo",   "nombre": "Bolón crudo",     "tipo": "prep" },
-    { "id": "huevo_frito",   "nombre": "Huevo frito",     "tipo": "prep" },
-    { "id": "cafe_pasado",   "nombre": "Café pasado",     "tipo": "prep" },
-    { "id": "bolon_huevo",   "nombre": "Bolón con huevo", "tipo": "prep" },
-    { "id": "tigrillo_base", "nombre": "Verde con huevo", "tipo": "prep" }
+    { "id": "verde_pelado",      "nombre": "Verde pelado",       "tipo": "prep" },
+    { "id": "verde_cocido",      "nombre": "Verde cocido",       "tipo": "prep" },
+    { "id": "masa_verde",        "nombre": "Masa de verde",      "tipo": "prep" },
+    { "id": "bolon_crudo",       "nombre": "Bolón crudo",        "tipo": "prep" },
+    { "id": "chicharron",        "nombre": "Chicharrón",         "tipo": "prep" },
+    { "id": "masa_mixta",        "nombre": "Masa con chicharrón","tipo": "prep" },
+    { "id": "bolon_mixto_crudo", "nombre": "Mixto crudo",        "tipo": "prep" },
+    { "id": "tigrillo_base",     "nombre": "Verde con huevo",    "tipo": "prep" }
   ],
 
   "tecnicas_nuevas": [
     { "id": "cocer",     "nombre": "Cocer",     "nota": "El agua hace la mitad del trabajo." },
     { "id": "rellenar",  "nombre": "Rellenar",  "nota": "Esconder lo mejor adentro." },
-    { "id": "fundir",    "nombre": "Fundir",    "nota": "Que lo blanco se pierda en lo tibio." },
-    { "id": "montar",    "nombre": "Montar",    "nota": "Acomodar el plato como quien acomoda un recuerdo." },
-    { "id": "acompanar", "nombre": "Acompañar", "nota": "Ningún plato camina solo." }
+    { "id": "fundir",    "nombre": "Fundir",    "nota": "Que lo blanco se pierda en lo tibio." }
   ]
 };
 
@@ -230,8 +227,8 @@ function buildRecetario() {
 
   /* alias de iconos para los ids nuevos (mientras no tengan dibujo propio) */
   const alias = { masa_verde: 'verde_majado', bolon_crudo: 'masa_bolon',
-                  cocer: 'hervir', rellenar: 'mezclar', fundir: 'mezclar',
-                  montar: 'usar', acompanar: 'usar' };
+                  masa_mixta: 'masa_bolon', bolon_mixto_crudo: 'masa_bolon',
+                  cocer: 'hervir', rellenar: 'mezclar', fundir: 'mezclar' };
   Object.entries(alias).forEach(([id, src]) => { if (!ICONS[id] && ICONS[src]) ICONS[id] = ICONS[src]; });
 }
 buildRecetario();

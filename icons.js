@@ -111,6 +111,13 @@ ICONS.queso = _svg(`
   <circle cx="33" cy="45" r="2.2" fill="#dcae5f"/>
   ${face(32, 30, .8)}`);
 
+ICONS.cerdo = _svg(`
+  <ellipse cx="33" cy="51" rx="17" ry="3" fill="#3a2c18" opacity=".13"/>
+  <path d="M13 32 Q12 20 28 17 Q47 14 51 26 Q54 38 40 44 Q22 50 15 42 Q11 38 13 32 Z" fill="#e8a29a" stroke="${INKL}" stroke-width="1.5" stroke-opacity=".45"/>
+  <path d="M15 27 Q31 19 49 23" stroke="#f7e6da" stroke-width="5.5" fill="none" stroke-linecap="round" opacity=".95"/>
+  <ellipse cx="29" cy="35" rx="5.5" ry="3.6" fill="#d98d84" opacity=".65"/>
+  <ellipse cx="41" cy="33" rx="3.4" ry="2.4" fill="#f2c8bf" opacity=".8"/>`);
+
 ICONS.chicharron = _svg(`
   <path d="M12 37 Q10 24 22 25 Q27 25 30 30 Q32 24 40 24 Q52 24 51 34 Q51 44 40 43 Q34 42 32 37 Q29 43 21 43 Q13 43 12 37 Z" fill="#c98a5b"/>
   <path d="M18 31 Q22 28 26 31 M36 30 Q40 27 44 30" stroke="#a5744c" stroke-width="2.2" fill="none" stroke-linecap="round"/>
