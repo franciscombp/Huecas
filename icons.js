@@ -493,6 +493,16 @@ ICONS.cliente_wawa = head('#e8b98f',
   `<path d="M22 16 Q32 8 42 16 Q38 12 32 12 Q26 12 22 16 Z" fill="#4a4038"/>
    <path d="M26 15 Q32 10 38 15" stroke="#4a4038" stroke-width="4" fill="none" stroke-linecap="round"/>
    <circle cx="20" cy="18" r="3.4" fill="#d9a0b0"/>`);
+/* Don Aurelio, el del arriendo: sombrero, bigote y libreta */
+ICONS.aurelio = head('#d9a878',
+  `<path d="M13 30 Q13 14 32 14 Q51 14 51 30 L51 25 Q47 18 32 18 Q17 18 13 25 Z" fill="#8d867a"/>
+   <rect x="19" y="8" width="26" height="8" rx="3.5" fill="#6b655b"/>
+   <path d="M24 45 Q32 49 40 45" stroke="#8d867a" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
+  `<g transform="rotate(-8 46 52)">
+     <rect x="39" y="47" width="15" height="11" rx="2" fill="#a5744c"/>
+     <path d="M42 50 H51 M42 53 H49" stroke="#f6eed9" stroke-width="1.6" stroke-linecap="round"/>
+   </g>`);
+
 ICONS.cliente_chofer = head('#b98a66',
   `<path d="M14 28 Q14 14 32 14 Q50 14 50 28 L50 24 H14 Z" fill="#4d5f80"/>
    <path d="M12 27 H52 L50 31 H14 Z" fill="#3d4c66"/>`);
