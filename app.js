@@ -259,7 +259,7 @@ function checkBeats() {
   state.beatsSeen.push(b.id);
   if (b.id === 'voz') state.rating = Math.min(HUECA.maxRating, state.rating + 1);
   save();
-  setTimeout(() => { if (!modalOpen()) showBeat(b.icon, b.title, b.text); }, 850);
+  setTimeout(() => showBeat(b.icon, b.title, b.text), 850);
   return true;
 }
 
@@ -355,27 +355,34 @@ function banner(msg, icon = '✦') {
    La cocina es el pretexto: cuando alguien tiene algo que contar
    (chisme, memoria, historia), el juego se detiene y escucha.
    El reloj se pausa solo (modalOpen congela la paciencia). */
-let escenaOnClose = null;
-let escenaPendiente = null;
+let escenaActual = null;
+let escenaCola = [];
 function showEscena(e) {
+  escenaActual = e;
   $('#escena-avatar').innerHTML = iconOf(e.icon);
   $('#escena-nombre').textContent = e.nombre || '';
   $('#escena-texto').textContent = e.texto;
-  $('#escena-ok').textContent = e.boton || 'Seguir';
-  escenaOnClose = e.onClose || null;
+  const ops = $('#escena-ops'); ops.innerHTML = '';
+  const opciones = (e.opciones && e.opciones.length) ? e.opciones : [{ label: e.boton || 'Seguir' }];
+  opciones.forEach((op, i) => {
+    const b = el('button', (i === 0 ? 'btn-main' : 'btn-ghost') + ' wide', op.label);
+    b.type = 'button';
+    b.addEventListener('click', () => closeEscena(op));
+    ops.appendChild(b);
+  });
   $('#modal-escena').classList.add('open');
   sfx('tab');
 }
-function queueEscena(e) { if (modalOpen()) escenaPendiente = e; else showEscena(e); }
+function queueEscena(e) { if (modalOpen()) escenaCola.push(e); else showEscena(e); }
 function drainEscena() {
-  if (!escenaPendiente) return;
-  const e = escenaPendiente; escenaPendiente = null;
-  setTimeout(() => { if (!modalOpen()) showEscena(e); else escenaPendiente = e; }, 350);
+  if (!escenaCola.length) return;
+  setTimeout(() => { if (!modalOpen() && escenaCola.length) showEscena(escenaCola.shift()); }, 380);
 }
-function closeEscena() {
+function closeEscena(op) {
   $('#modal-escena').classList.remove('open');
-  const f = escenaOnClose; escenaOnClose = null;
-  if (f) f();
+  const e = escenaActual; escenaActual = null;
+  if (op && op.onPick) op.onPick();
+  if (e && e.onClose) e.onClose();
   drainEscena();
 }
 
@@ -451,10 +458,13 @@ function clockTick() {
   const front = queue.find(c => !c.story) || null;
   queue.forEach(c => { if (c !== front && !c.story && isFinite(c.deadline)) c.deadline += dt; });
   let expired = false;
-  if (front && now >= front.deadline) { missCustomer(front.id, true); expired = true; }
+  if (front && isFinite(front.deadline) && now >= front.deadline) { missCustomer(front.id, true); expired = true; }
   /* aparecer */
   const tier = pressureTier();
   if (queue.length < HUECA.queueMax && now - lastSpawn >= tier.spawnMs) spawnCustomer();
+  /* el nuevo del frente te saluda: escena con decisión */
+  const f2 = queue.find(c => !c.story);
+  if (f2 && !f2.greeted) { f2.greeted = true; saludoEscena(f2); return; }
   if (!expired && currentScreen === 'cocina') updateQueueBars();
 }
 
@@ -473,11 +483,33 @@ function spawnCustomer() {
   const tier = pressureTier();
   /* el barrio murmura: cada desatendido encoge la paciencia del que sigue */
   const pat = Math.max(10, Math.round(tier.patience * Math.pow(HUECA.patienceDecay || 1, state.consecutiveMisses)));
-  queue.push({ id: ++custId, ...who, dish, deadline: Date.now() + pat * 1000, total: pat,
+  /* la paciencia NO corre hasta que lo saludes y aceptes atenderlo */
+  queue.push({ id: ++custId, ...who, dish, pat, deadline: Infinity, total: pat,
+               greeted: false, accepted: false,
                chismes: HUECA.chismesPorCliente || 2 });
   lastSpawn = Date.now();
   buzz(30);
   if (currentScreen === 'cocina') renderComensal();
+}
+
+/* al llegar al frente, el comensal te saluda y TÚ decides */
+function saludoEscena(c) {
+  const linea = c.line ? `«${c.line}»  ` : '';
+  showEscena({
+    icon: c.icon, nombre: `Llegó ${c.name}`,
+    texto: `${linea}¿Me tienes ${ITEMS[c.dish].name.toLowerCase()}, veci?`,
+    opciones: [
+      { label: 'Claro veci, ya le atiendo', onPick: () => {
+          c.accepted = true;
+          c.deadline = Date.now() + c.pat * 1000; c.total = c.pat;
+          renderComensal();
+        } },
+      { label: '“Se me acabó, veci” 👋', onPick: () => {
+          toast(`${c.name} se va murmurando…`, 'soft');
+          missCustomer(c.id, false);
+        } },
+    ],
+  });
 }
 
 /* escuchar el chisme: el comensal se entretiene y te espera más;
@@ -514,7 +546,7 @@ function updateQueueBars() {
   const front = queue.find(c => !c.story);
   const box = $('#comensal');
   const bar = box && box.querySelector('.com-bar');
-  if (!front || !bar || storyGuest()) return;
+  if (!front || !bar || storyGuest() || !isFinite(front.deadline)) return;
   const frac = Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
   bar.style.transform = `scaleX(${frac})`;
   box.classList.toggle('urgent', frac < 0.35);
@@ -563,7 +595,7 @@ function maybeVisita() {
   buzz([50, 40, 50]);
   toast(`★ Llegó ${v.name}: pide ${ITEMS[v.dish].name} y no se irá sin él.`, 'seal');
   if (currentScreen === 'cocina') renderComensal();
-  setTimeout(() => { if (!modalOpen()) showVisita(v); }, 900);
+  setTimeout(() => showVisita(v), 900);
 }
 
 function resolveVisita(c, idx, at) {
@@ -635,41 +667,29 @@ function maybeUnlockRegion() {
 
 /* ---------- Momentos de historia (beats guionizados) ---------- */
 function showBeat(icon, title, text) {
-  $('#visita-icon').innerHTML = iconOf(icon);
-  $('#visita-title').textContent = title;
-  $('#visita-text').textContent = text;
-  $('#visita-want').style.display = 'none';
-  $('#visita-reward').style.display = 'none';
-  const btn = $('#visita-ok'); btn.textContent = 'Seguir';
-  btn.onclick = () => $('#modal-visita').classList.remove('open');
-  $('#modal-visita').classList.add('open');
+  queueEscena({ icon, nombre: title, texto: text, boton: 'Seguir' });
   sfx('win');
 }
 
 /* ---------- Visita de historia: modales ---------- */
 function showVisita(v) {
-  $('#visita-icon').innerHTML = iconOf(v.icon);
-  $('#visita-title').textContent = `Llegó ${v.name}`;
-  $('#visita-text').textContent = v.ask;
-  $('#visita-want').innerHTML = `<span class="vw-ic">${iconOf(v.dish)}</span> Quiere <b>${ITEMS[v.dish].name}</b>. ${v.hintTo}`;
-  $('#visita-want').style.display = '';
-  $('#visita-reward').style.display = 'none';
-  const btn = $('#visita-ok'); btn.textContent = 'Lo atiendo';
-  btn.onclick = () => $('#modal-visita').classList.remove('open');
-  $('#modal-visita').classList.add('open');
+  queueEscena({
+    icon: v.icon, nombre: `Llegó ${v.name}`,
+    texto: v.ask,
+    boton: 'Claro que sí, siga no más',
+    onClose: () => banner(v.hintTo, '📖'),
+  });
 }
 function showVisitaBeat(v) {
-  $('#visita-icon').innerHTML = iconOf(v.dish);
-  $('#visita-title').textContent = `¡${v.name} feliz!`;
-  $('#visita-text').textContent = v.beat;
-  $('#visita-want').style.display = 'none';
-  const rew = $('#visita-reward'); rew.style.display = ''; rew.textContent = `+S/ ${S(v.reward)} · +2 de fama`;
-  const btn = $('#visita-ok'); btn.textContent = '¡Qué orgullo!';
-  btn.onclick = () => {
-    $('#modal-visita').classList.remove('open');
-    if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 400);
-  };
-  $('#modal-visita').classList.add('open');
+  queueEscena({
+    icon: v.dish, nombre: v.name,
+    texto: v.beat,
+    boton: '¡Qué orgullo!',
+    onClose: () => {
+      banner(`+S/ ${S(v.reward)} · +2 de fama`, '★');
+      if (state.sinceRent >= HUECA.rentEvery) setTimeout(showRent, 500);
+    },
+  });
 }
 
 /* ---------- Salubridad ---------- */
@@ -677,23 +697,18 @@ function showVisitaBeat(v) {
 function salubridadVisit() {
   state.consecutiveMisses = 0;
   const pass = readyDishes().length > 0;
-  $('#salubridad-icon').innerHTML = iconOf(pass ? 'salubridad' : 'arriendo');
-  $('#salubridad-title').textContent = 'Autoridad de salubridad';
-  $('#salubridad-text').textContent = pass
-    ? 'Tres clientes se fueron con hambre y llegó la inspección. Por suerte tenías un plato listo para mostrar.'
-    : 'Tres clientes se fueron con hambre y llegó la inspección. No había ni un plato listo que mostrar.';
-  const btn = $('#salubridad-ok');
-  btn.textContent = pass ? 'Seguir abierta' : 'Cerrar la hueca';
-  btn.dataset.pass = pass ? '1' : '0';
-  $('#modal-salubridad').classList.add('open');
+  queueEscena({
+    icon: 'arriendo', nombre: 'Inspección de salubridad',
+    texto: pass
+      ? 'Tres clientes se fueron con hambre y llegó la inspección. Husmea la cocina… y encuentra un plato listo, decente. «Que no se repita, ¿oyó?»'
+      : 'Tres clientes se fueron con hambre y llegó la inspección. Ni un plato listo que mostrar. «Esto no puede seguir abierto así.»',
+    opciones: [pass
+      ? { label: 'Seguir abierta', onPick: () => toast(MICROCOPY.salubridadPass, 'seal') }
+      : { label: 'Bajar la persiana…', onPick: () => { toast(MICROCOPY.salubridadClose, 'soft'); closeHueca(); } }],
+  });
   save();
 }
-function resolveSalubridad() {
-  const pass = $('#salubridad-ok').dataset.pass === '1';
-  $('#modal-salubridad').classList.remove('open');
-  if (pass) toast(MICROCOPY.salubridadPass, 'seal');
-  else { toast(MICROCOPY.salubridadClose, 'soft'); closeHueca(); }
-}
+function resolveSalubridad() { $('#modal-salubridad').classList.remove('open'); }
 
 /* ---------- Milestones ---------- */
 
@@ -715,8 +730,9 @@ function checkMilestone() {
 
 function currentRent() { return HUECA.rentBase + HUECA.rentStep * state.rentCycle; }
 
+/* Don Aurelio en persona: el arriendo es una escena con decisión */
 function showRent() {
-  if (modalOpen()) { setTimeout(showRent, 800); return; }
+  if (modalOpen()) { setTimeout(showRent, 900); return; }
   state.sinceRent = 0;
   const rent = currentRent();
   const canPay = state.coins >= rent;
@@ -724,27 +740,30 @@ function showRent() {
      después ya depende de tu fama */
   const firstGrace = !canPay && !state.fiado && state.rentCycle === 0;
   const canFiar = !canPay && !state.fiado && (state.rating >= 7 || firstGrace);
-  $('#arriendo-text').textContent = firstGrace
-    ? `Don Aurelio pasa por el arriendo: S/ ${S(rent)}. Ve tu cara de recién llegado y suspira.`
-    : `Don Aurelio pasa por el arriendo: S/ ${S(rent)}.`;
-  const payBtn = $('#arriendo-pay');
-  payBtn.textContent = canPay ? `Pagar S/ ${S(rent)}` : canFiar ? 'Pedir que te fíe' : 'No me alcanza…';
-  payBtn.dataset.mode = canPay ? 'pay' : canFiar ? 'fiar' : 'close';
-  $('#arriendo-note').textContent = canPay
-    ? (state.rentCycle >= 1 ? 'Y cada mes sube. Ofrece platos más caros.' : 'La hueca sigue abierta un mes más.')
-    : firstGrace ? '«Ya que eres hijito de tu mamita… vuelvo mañana, y ojalá vendas mucho.»'
-    : canFiar ? 'Con tu fama, don Aurelio puede esperar. Solo esta vez.'
-      : 'Sin sucres y sin fama, don Aurelio no perdona.';
-  $('#modal-arriendo').classList.add('open');
+  const ops = [];
+  if (canPay) ops.push({ label: `Pagar S/ ${S(rent)}`, onPick: () => {
+    addCoins(-rent); state.rentCycle += 1; save();
+    banner(`Arriendo pagado. ${state.rentCycle >= 2 ? 'Y cada mes sube: ofrece platos más caros.' : 'Un mes más de hueca.'}`, '🏠');
+  } });
+  if (canFiar) ops.push({ label: firstGrace ? 'Prometerle que mañana sí' : 'Pedirle que te fíe', onPick: () => {
+    state.fiado = true; save();
+    toast('Don Aurelio anota en su libreta y se va sin sonreír.', 'soft');
+  } });
+  if (!ops.length) ops.push({ label: 'No me alcanza, don Aurelio…', onPick: closeHueca });
+  queueEscena({
+    icon: 'aurelio', nombre: 'Don Aurelio · el arriendo',
+    texto: canPay
+      ? `Buenas, mijo. Vengo por lo del mes: S/ ${S(rent)}. ${state.rentCycle >= 1 ? 'Y ya sabes que cada mes sube un poquito.' : 'La Delfina siempre me pagó puntual, que conste.'}`
+      : firstGrace
+        ? `Son S/ ${S(rent)} del mes… pero te veo cara de recién llegado y la cocina oliendo a verde. Ya que eres hijito de tu mamita: vuelvo mañana, y ojalá vendas mucho.`
+        : canFiar
+          ? `Son S/ ${S(rent)}. ¿No te alcanza? Mmm… con la fama que está agarrando esto, puedo esperarte. Solo esta vez, ¿oíste?`
+          : `Son S/ ${S(rent)}. Sin sucres y sin fama, mijo, no hay hueca que aguante. Ni cariño que alcance.`,
+    opciones: ops,
+  });
   save();
 }
-function resolveRent() {
-  const mode = $('#arriendo-pay').dataset.mode;
-  $('#modal-arriendo').classList.remove('open');
-  if (mode === 'pay') { addCoins(-currentRent()); state.rentCycle += 1; toast('Arriendo pagado. Un mes más de hueca.', 'seal'); save(); }
-  else if (mode === 'fiar') { state.fiado = true; toast('Don Aurelio anota en su libreta y se va sin sonreír.', 'soft'); save(); }
-  else closeHueca();
-}
+function resolveRent() { $('#modal-arriendo').classList.remove('open'); }
 
 /* ---------- Cierre / reapertura ---------- */
 
@@ -996,7 +1015,8 @@ function renderComensal() {
      de pedido (como ordenar de verdad), no una tarjeta de lista */
   const scene = el('div', 'com-scene');
   scene.dataset.id = front.id;
-  const frac = front.story ? 1 : Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
+  const sinReloj = front.story || !isFinite(front.deadline);
+  const frac = sinReloj ? 1 : Math.max(0, (front.deadline - Date.now()) / (front.total * 1000));
   scene.innerHTML = `
     <div class="com-who">
       ${front.story ? '<span class="com-crown" aria-hidden="true">★</span>' : ''}
@@ -1007,9 +1027,9 @@ function renderComensal() {
     <div class="com-order">
       <div class="com-bubble">
         <span class="com-dish">${iconOf(front.dish)}</span>
-        <span class="com-ask">${ITEMS[front.dish].name}<small>${front.story ? 'no se irá sin probarlo' : 'por favorcito'}</small></span>
+        <span class="com-ask">${ITEMS[front.dish].name}<small>${front.story ? 'no se irá sin probarlo' : front.accepted ? 'por favorcito' : 'acaba de llegar…'}</small></span>
       </div>
-      ${front.story
+      ${sinReloj
         ? ''
         : `<span class="com-bar-wrap"><span class="com-bar" style="transform:scaleX(${frac})"></span></span>`}
       ${front.story ? '' : `
@@ -1136,7 +1156,32 @@ function renderRiddle() {
   const step = CUADERNOS[state.active].steps.find(s => !knows(s.result) && !s.variant);
   if (!step) { note.className = 'cocina-riddle done'; note.innerHTML = `<span class="riddle-label">${dish}</span><span class="riddle-hint hand">✓ te lo sabes de memoria</span>`; return; }
   note.className = 'cocina-riddle';
-  note.innerHTML = `<span class="riddle-label">${dish} · el cuaderno dice</span><span class="riddle-hint hand">“${step.hint}”</span>`;
+  note.innerHTML = `<span class="riddle-label">${dish} · el cuaderno murmura (toca)</span><span class="riddle-hint hand">“${step.hint}”</span>`;
+}
+
+/* tocar el acertijo = abrir la conversación con el cuaderno */
+function riddleEscena() {
+  const c = CUADERNOS[state.active];
+  if (!c || combining) return;
+  const step = currentStep();
+  if (!step) {
+    showEscena({ icon: c.dish, nombre: c.title, texto: 'Esta página ya respira a color. Te la sabes de memoria, como ella quería.', boton: 'A cocinar' });
+    return;
+  }
+  const revealed = state.revealed.includes(step.result);
+  const leerPaso = () => showEscena({
+    icon: step.result, nombre: 'El cuaderno de la abuela',
+    texto: step.line, boton: 'Ya entendí ✍',
+    onClose: () => { if (currentScreen === 'cocina') renderCocina(); },
+  });
+  const ops = [{ label: 'Déjame intentarlo yo' }];
+  if (revealed) ops.push({ label: 'Léemelo otra vez', onPick: leerPaso });
+  else ops.push({ label: `Espiar la respuesta · S/ ${S(REVEAL_COST)}`, onPick: () => {
+    if (state.coins < REVEAL_COST) { toast(MICROCOPY.noCoins, 'soft'); return; }
+    addCoins(-REVEAL_COST); state.revealed.push(step.result); save();
+    leerPaso();
+  } });
+  showEscena({ icon: 'cuaderno', nombre: `${c.title} · el acertijo`, texto: `«${step.hint}»`, opciones: ops });
 }
 
 /* --- repisa de platos listos: tira compacta, se oculta si no hay --- */
@@ -1347,14 +1392,23 @@ function performCook(x, y) {
   }, 480);
 }
 
+/* el percance también es una escena, con su decisión */
 function showMishap(id, title, text) {
-  $('#mishap-icon').innerHTML = iconOf(id);
-  $('#mishap-title').textContent = title;
-  $('#mishap-text').textContent = text;
   const worth = ITEMS[id].sell;
-  $('#mishap-keep').textContent = worth ? `Guardar (vale S/ ${S(worth)})` : 'Guardar igual';
-  $('#mishap-toss').dataset.id = id;
-  $('#modal-mishap').classList.add('open');
+  queueEscena({
+    icon: id, nombre: title,
+    texto: text,
+    opciones: [
+      { label: 'Botar nomás', onPick: () => {
+          if (count(id) > 0) addItem(id, -1);
+          toast(MICROCOPY.tossed, 'soft'); save();
+          if (currentScreen === 'cocina') renderCocina();
+        } },
+      { label: worth ? `Guardar (vale S/ ${S(worth)})` : 'Guardar igual', onPick: () => {
+          if (currentScreen === 'cocina') renderCocina();
+        } },
+    ],
+  });
 }
 function tossMishap() {
   const id = $('#mishap-toss').dataset.id;
@@ -1391,13 +1445,19 @@ function discover(id, source, kind) {
   } else { save(); showPaso(id, source, reward, newTech); }
 }
 
+/* el paso descifrado es una ESCENA: el cuaderno de la abuela te habla */
 function showPaso(id, source, reward, newTech) {
-  $('#paso-icon').innerHTML = iconOf(id);
-  $('#paso-name').textContent = ITEMS[id].name;
-  $('#paso-line').textContent = source.line || source.msg || '';
-  $('#paso-tech').innerHTML = newTech ? `Saber registrado: <span class="tech-chip">${iconOf(newTech)}</span> <em>${ITEMS[newTech].name}</em>` : '';
-  $('#paso-reward').textContent = `+S/ ${S(reward)}`;
-  $('#modal-paso').classList.add('open');
+  const dicho = source.hint ? `«${source.hint}»… ¡era esto! ` : '';
+  queueEscena({
+    icon: id, nombre: 'El cuaderno de la abuela',
+    texto: `${dicho}${source.line || source.msg || ''}`,
+    boton: 'Seguir cocinando ✍',
+    onClose: () => {
+      banner(`${ITEMS[id].name} · +S/ ${S(reward)}${newTech ? ` · nuevo saber: ${ITEMS[newTech].name}` : ''}`, '✍');
+      if (currentScreen === 'cocina') renderCocina();
+      if (currentScreen === 'receta') renderReceta();
+    },
+  });
 }
 function closePaso() {
   $('#modal-paso').classList.remove('open');
@@ -1604,7 +1664,7 @@ function bindEvents() {
     zone.addEventListener('click', () => { if (combining) return; if (!slots[0]) openPicker(0); });
   }
 
-  $('#escena-ok').addEventListener('click', closeEscena);
+  $('#cocina-riddle').addEventListener('click', riddleEscena);
   $('#arriendo-pay').addEventListener('click', resolveRent);
   $('#cierre-reopen').addEventListener('click', reopenHueca);
   $('#salubridad-ok').addEventListener('click', resolveSalubridad);
