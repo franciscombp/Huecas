@@ -223,15 +223,38 @@ const CLIENTES = [
     left:  'Tanto esperar para nada… bueno, será.' },
 ];
 
+/* ---------- Chismes del barrio ----------
+   Escuchar el chisme calma al comensal (le sube la paciencia) y te
+   distrae un momento: la hueca también es conversación. */
+const CHISMES = [
+  '«¿Supiste? La del bazar se ganó una licuadora en la rifa del mercado. Nueva, en su caja.»',
+  '«El chofer de la 22 anda enamorado de la señorita de la farmacia. Todo el barrio lo sabe, menos ella.»',
+  '«Dizque van a asfaltar la calle antes de las fiestas. Eso mismo dijeron el año pasado.»',
+  '«La comadre Chela vio al cura comiendo en la hueca de la competencia. ¡En plena cuaresma!»',
+  '«Mi vecina compró una parabólica. Ahora ve novelas mexicanas a toda hora, ni saluda.»',
+  '«Dicen que el municipio va a cambiar los sucres por otra moneda… yo no creo, ¿tú sí?»',
+  '«El hijo de don Aurelio se fue a España. Manda fotos con nieve, el condenado.»',
+  '«En la esquina abrieron un cyber. Cobran por hora, ¡por sentarse frente a un televisor con teclas!»',
+  '«La Delfina una vez le negó el bolón al alcalde por sinvergüenza. Así era ella, firme.»',
+  '«Doña Piedad vio un ovni sobre el estero. Era el foco nuevo de la cancha, pero no le digas.»',
+];
+
 const HUECA = {
   startRating: 5, maxRating: 10,
-  queueMax: 3,               /* clientes esperando a la vez */
+  queueMax: 4,               /* la vida de la hueca es que siempre está llena */
   tipMax: 200,
+  /* entrada continua: en cuanto hay un plato, la gente no para de llegar.
+     La paciencia es del que está AL FRENTE; los demás esperan turno. */
   pressure: [
-    { dishes: 1, spawnMs: 11000, patience: 80 },
-    { dishes: 2, spawnMs: 8500,  patience: 70 },
-    { dishes: 3, spawnMs: 7000,  patience: 62 },
+    { dishes: 1, spawnMs: 6500, patience: 75 },
+    { dishes: 2, spawnMs: 5200, patience: 65 },
+    { dishes: 3, spawnMs: 4200, patience: 58 },
   ],
+  /* cada desatendido encoge la paciencia del siguiente (el barrio murmura) */
+  patienceDecay: 0.8,
+  /* escuchar el chisme del comensal le regala paciencia */
+  chismeExtraS: 14,
+  chismesPorCliente: 2,
   /* GDD §8: sin arriendo ni crisis en esta fase (el sistema queda dormido) */
   rentEvery: 999999,
   rentBase: 1000, rentStep: 600,
@@ -254,11 +277,11 @@ const MILESTONES = [];   /* GDD §8: metas de largo plazo, fase futura */
 const VISITAS = [
   { after: 2, name: 'Don Segundo', icon: 'cliente_jacinto', dish: 'bolon_mixto',
     unlocks: 'bolon_mixto',
-    ask: 'Tú debes ser la sangre de la Delfina. Yo venía cada domingo por su MIXTO: bolón con huevo frito encima y café pasado. Aquí me siento, sin apuro… mientras, te converso.',
-    hintTo: 'Se abrió una página nueva del cuaderno: “Bolón mixto”. Te faltará huevo y café — la canasta del mercado está a la derecha.',
+    ask: 'Tú debes ser la sangre de la Delfina. Yo venía cada domingo por su MIXTO: la bola de verde con queso Y chicharrón, de las que llenan hasta el almuerzo. Aquí me siento, sin apuro… mientras, te converso.',
+    hintTo: 'Se abrió una página nueva del cuaderno: “Bolón mixto”. Te faltará carne de cerdo para el chicharrón — la canasta del mercado está a la derecha.',
     reward: 800,
     memorias: [
-      '«Tu abuela pasaba el café con chuspa, nada de máquinas. Decía que el apuro le quita el dulce.»',
+      '«Tu abuela hacía el chicharrón en su propia grasa, sin apuro. Decía que el apuro le quita el dulce a todo.»',
       '«Una vez llovió tan fuerte que el barrio entero desayunó aquí, apretado y feliz. Nadie pagó ese día.»',
       '«Ella no regalaba las recetas, ¿sabes? Decía que había cosas que solo se aprenden con las manos.»',
     ],

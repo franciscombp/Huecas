@@ -340,11 +340,23 @@ function checkRescue() {
 }
 
 let toastTimer = null;
+/* Mensajes en dos niveles (estilo Duolingo):
+   - banner: tarjeta grande arriba, para lo que importa (tone 'seal')
+   - toast: nota abajo, para lo secundario ('soft' / 'ink') */
+let bannerTimer = null;
+function banner(msg, icon = '✦') {
+  const b = $('#banner');
+  b.innerHTML = `<span class="banner-ic" aria-hidden="true">${icon}</span><span class="banner-txt">${msg}</span>`;
+  b.classList.remove('visible'); void b.offsetWidth; b.classList.add('visible');
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => b.classList.remove('visible'), 3400);
+}
 function toast(msg, tone = 'ink') {
+  if (tone === 'seal') { banner(msg); return; }
   const t = $('#toast');
   t.textContent = msg; t.dataset.tone = tone; t.classList.add('visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('visible'), 2600);
+  toastTimer = setTimeout(() => t.classList.remove('visible'), 2800);
 }
 
 /* ============================================================
@@ -376,7 +388,9 @@ function startClock() {
 function stopClock() { clearInterval(gameClock); gameClock = null; }
 
 function clockTick() {
-  if (currentScreen === 'cover' || state.mode !== 'servicio' || modalOpen()) { lastSpawn = lastTick = Date.now(); return; }
+  /* el tiempo SOLO corre en la cocina: el mercado y el recetario son
+     tu pausa para pensar, comprar y leer con calma */
+  if (currentScreen !== 'cocina' || state.mode !== 'servicio' || modalOpen()) { lastSpawn = lastTick = Date.now(); return; }
   const now = Date.now();
   const dt = now - lastTick; lastTick = now;
   /* pudrir mezclas inútiles que se quedaron en el mesón (aun sin platos) */
@@ -425,10 +439,36 @@ function spawnCustomer() {
   if (!dish) return;
   const who = pick(CLIENTES);
   const tier = pressureTier();
-  queue.push({ id: ++custId, ...who, dish, deadline: Date.now() + tier.patience * 1000, total: tier.patience });
+  /* el barrio murmura: cada desatendido encoge la paciencia del que sigue */
+  const pat = Math.max(10, Math.round(tier.patience * Math.pow(HUECA.patienceDecay || 1, state.consecutiveMisses)));
+  queue.push({ id: ++custId, ...who, dish, deadline: Date.now() + pat * 1000, total: pat,
+               chismes: HUECA.chismesPorCliente || 2 });
   lastSpawn = Date.now();
   buzz(30);
   if (currentScreen === 'cocina') renderComensal();
+}
+
+/* escuchar el chisme: el comensal se entretiene y te espera más;
+   conversar también calma el murmullo del barrio */
+function chismear(id) {
+  const c = queue.find(q => q.id === id);
+  if (!c || c.story || (c.chismes | 0) <= 0) return;
+  c.chismes -= 1;
+  const extra = (HUECA.chismeExtraS || 14) * 1000;
+  c.deadline += extra; c.total += extra / 1000;
+  state.consecutiveMisses = 0;
+  sfx('tab'); buzz(15);
+  banner(pick(CHISMES), '🗨');
+  save(); renderComensal();
+}
+
+/* "se me acabó, veci": despachas al del frente sin servirle.
+   Te libera la barra, pero el barrio lo nota (pierdes un corazón). */
+function despedir(id) {
+  const c = queue.find(q => q.id === id);
+  if (!c || c.story) return;
+  toast(`${c.name} se va murmurando…`, 'soft');
+  missCustomer(id, false);
 }
 
 function updateQueueBars() {
@@ -932,11 +972,20 @@ function renderComensal() {
       ${front.story
         ? ''
         : `<span class="com-bar-wrap"><span class="com-bar" style="transform:scaleX(${frac})"></span></span>`}
+      ${front.story ? '' : `
+      <div class="com-chat">
+        <button type="button" class="chat-btn chisme" ${(front.chismes | 0) > 0 ? '' : 'disabled'}>🗨 chismear</button>
+        <button type="button" class="chat-btn adios">“se me acabó, veci”</button>
+      </div>`}
     </div>
     <button type="button" class="com-serve" ${have ? '' : 'disabled'}>${have ? 'Servir' : '· · ·'}</button>`;
   if (!front.story) inkState(scene.querySelector('.com-avatar'), front.icon);
   inkState(scene.querySelector('.com-dish'), front.dish);
   scene.querySelector('.com-serve').addEventListener('click', () => { if (have) serveCustomer(front.id); });
+  const chBtn = scene.querySelector('.chat-btn.chisme');
+  if (chBtn) chBtn.addEventListener('click', () => chismear(front.id));
+  const adBtn = scene.querySelector('.chat-btn.adios');
+  if (adBtn) adBtn.addEventListener('click', () => despedir(front.id));
   box.appendChild(scene);
 }
 
@@ -950,16 +999,17 @@ function itemCard(id) {
   return card;
 }
 
+/* mesa de UN solo espacio: lo que está en la mesa es la base; todo lo
+   demás (agregar, pelar, freír…) son botones de acción debajo */
 function renderSlots() {
-  [0, 1].forEach(i => { if (slots[i] && !isTool(slots[i]) && count(slots[i]) <= 0) slots[i] = null; });
-  [0, 1].forEach(i => {
-    const zone = $('#slot-' + i);
-    zone.innerHTML = '';
-    zone.classList.toggle('filled', !!slots[i]);
-    if (slots[i]) { const card = itemCard(slots[i]); card.tabIndex = -1; card.style.pointerEvents = 'none'; zone.appendChild(card); }
-    else zone.innerHTML = `<span class="slot-plus" aria-hidden="true">+</span><span class="slot-add hand">agregar</span>`;
-  });
-  $('#mesa-clear').style.display = (slots[0] || slots[1]) ? '' : 'none';
+  if (slots[0] && !isTool(slots[0]) && count(slots[0]) <= 0) slots[0] = null;
+  slots[1] = null;
+  const zone = $('#slot-0');
+  zone.innerHTML = '';
+  zone.classList.toggle('filled', !!slots[0]);
+  if (slots[0]) { const card = itemCard(slots[0]); card.tabIndex = -1; card.style.pointerEvents = 'none'; zone.appendChild(card); }
+  else zone.innerHTML = `<span class="slot-plus" aria-hidden="true">+</span><span class="slot-add hand">agregar a la mesa</span>`;
+  $('#mesa-clear').style.display = slots[0] ? '' : 'none';
 }
 
 function verbOf(sr) {
@@ -1017,37 +1067,27 @@ function actionBtn(cls, label, icon, onClick) {
   return btn;
 }
 
+/* con algo en la mesa, TODO son botones de acción: "+ agregar" (abre la
+   despensa y lo elegido se usa encima) + las habilidades aprendidas */
 function renderMesaAction() {
   const zone = $('#mesa-action');
   zone.innerHTML = '';
   if (combining) return;
-  const [x, y] = slots;
+  const x = slots[0];
+  if (!x) return;                        /* la casilla vacía ya es el agregar */
 
-  /* un solo objeto en la mesa */
-  if (x && !y) {
-    /* plato terminado: servir a quien lo pida o guardarlo (que no estorbe) */
-    if (isDish(x)) {
-      const wanted = queue.find(c => c.dish === x);
-      if (wanted) zone.appendChild(actionBtn(' known', 'Servir', 'corazon', () => serveCustomer(wanted.id)));
-      zone.appendChild(actionBtn(' guardar', 'Guardar', 'usar', clearMesa));
-      return;
-    }
-    /* habilidad aprendida: acción con solo el ingrediente (el utensilio se usa solo) */
-    const autos = learnedToolSteps(x);
-    autos.forEach(({ step, tool }) => {
-      const v = verbOf(step);
-      zone.appendChild(actionBtn(' known', v.label, v.icon, () => performCook(x, tool)));
-    });
-    return;
+  zone.appendChild(actionBtn(' add', '＋ Agregar', 'usar', () => openPicker(0)));
+
+  if (isDish(x)) {
+    const wanted = queue.find(c => c.dish === x);
+    if (wanted) zone.appendChild(actionBtn(' known', 'Servir', 'corazon', () => serveCustomer(wanted.id)));
+    zone.appendChild(actionBtn(' guardar', 'Guardar', 'usar', clearMesa));
   }
-
-  if (!x || !y) return;
-  const act = actionFor(x, y);
-  if (!act) { zone.innerHTML = `<span class="mesa-nope">${MICROCOPY.toolsClank}</span>`; return; }
-  /* verbo revelado solo si ya descubriste ese paso; si no, "Usar" (sin spoiler) */
-  const known = act.good && knows(act.result);
-  const v = known ? verbOf(act.source) : { label: 'Usar', icon: 'usar' };
-  zone.appendChild(actionBtn(known ? ' known' : '', v.label, v.icon, () => performCook(x, y)));
+  /* habilidades aprendidas para lo que está en la mesa (el utensilio va solo) */
+  learnedToolSteps(x).forEach(({ step, tool }) => {
+    const v = verbOf(step);
+    zone.appendChild(actionBtn(' known', v.label, v.icon, () => performCook(x, tool)));
+  });
 }
 
 function renderRiddle() {
@@ -1167,14 +1207,19 @@ function sheetSection(title, cards) {
 function renderPicker() {
   const step = currentStep();
   const need = $('#despensa-need');
-  if (step) {
-    need.innerHTML = `El cuaderno pide: <b>${ITEMS[step.a].name}</b> ${isTool(step.a) ? '' : ''}+ <b>${ITEMS[step.b].name}</b>. Lo que sirve brilla ✨`;
-  } else { need.textContent = 'Elige un ingrediente o un utensilio para la mesa.'; }
+  const base = slots[0];
+  if (base) {
+    need.innerHTML = `En la mesa: <b>${ITEMS[base].name}</b>. Lo que elijas se usará encima. ${step ? 'Lo que sirve brilla ✨' : ''}`;
+  } else if (step) {
+    need.innerHTML = `El cuaderno pide: <b>${ITEMS[step.a].name}</b> + <b>${ITEMS[step.b].name}</b>. Lo que sirve brilla ✨`;
+  } else { need.textContent = 'Elige qué poner en la mesa.'; }
 
   const body = $('#despensa-body'); body.innerHTML = '';
   const ing = Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
   const preps = Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-  const mine = [...preps, ...ing];
+  /* los platos listos también son insumo (recalentar, bases, combos) */
+  const listos = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
+  const mine = [...listos, ...preps, ...ing];
   body.appendChild(sheetSection('Tu despensa', mine.map(id => pickCard(id))));
   body.appendChild(sheetSection('Utensilios', state.tools.map(id => pickCard(id))));
   const buyable = marketIngredients().filter(id => ITEMS[id].price != null);
@@ -1190,24 +1235,30 @@ function updateCoach() {
      “Servir” son evidentes y dejamos ver el estante de platos listos */
   const hide = state.tutDone || currentScreen !== 'cocina' || state.mode !== 'servicio' || !c || count(c.dish) > 0;
   if (hide) { coach.classList.add('hidden'); return; }
-  const [x, y] = slots;
-  $('#coach-text').textContent = (x || y)
-    ? 'Pulsa el botón grande para cocinar 👆'
-    : 'Toca una casilla ➕ y elige lo que pide el cuaderno';
+  $('#coach-text').textContent = slots[0]
+    ? 'Elige una acción, o ＋ Agrega lo que pide el cuaderno 👆'
+    : 'Toca ➕ y pon lo que pide el cuaderno';
   coach.classList.remove('hidden');
 }
 
+/* Un solo espacio: si la mesa está vacía, lo colocas; si ya hay algo,
+   lo nuevo SE USA sobre lo que está en la mesa (combina al instante). */
 function placeInSlot(id, index = null) {
   if (combining) return;
   if (isTool(id) && isDull(id)) { toast(MICROCOPY.dullKnife, 'soft'); return; }
-  if (isTool(id) && slots.includes(id) && index === null) { slots[slots.indexOf(id)] = null; renderCocina(); return; }
-  const inSlots = slots.filter(s => s === id).length;
-  if (!isTool(id) && count(id) - inSlots <= 0) { toast('No te queda más. La lona tiene.', 'soft'); return; }
-  let i = index;
-  if (i === null) i = slots[0] === null ? 0 : slots[1] === null ? 1 : 1;
-  slots[i] = id;
-  sfx('place'); buzz(12);
-  renderCocina();
+  const base = slots[0];
+  if (!base) {
+    if (isTool(id)) { toast('Primero pon un ingrediente; el utensilio se usa encima.', 'soft'); return; }
+    if (count(id) <= 0) { toast('No te queda más. La lona tiene.', 'soft'); return; }
+    slots[0] = id;
+    sfx('place'); buzz(12);
+    renderCocina();
+    return;
+  }
+  if (!isTool(id) && count(id) - (base === id ? 1 : 0) <= 0) { toast('No te queda más. La lona tiene.', 'soft'); return; }
+  const act = actionFor(base, id);
+  if (!act) { toast(MICROCOPY.toolsClank, 'soft'); return; }
+  performCook(base, id);
 }
 function clearMesa() { if (combining) return; slots[0] = slots[1] = null; renderCocina(); }
 
@@ -1499,13 +1550,13 @@ function bindEvents() {
   $('#despensa-close').addEventListener('click', closePicker);
   $('#modal-despensa').addEventListener('click', (e) => { if (e.target === $('#modal-despensa')) closePicker(); });
 
-  [0, 1].forEach(i => {
-    const zone = $('#slot-' + i);
+  {
+    const zone = $('#slot-0');
     zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('over'));
-    zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); if (id && ITEMS[id]) placeInSlot(id, i); });
-    zone.addEventListener('click', () => { if (combining) return; if (slots[i]) { slots[i] = null; sfx('tab'); renderCocina(); } else openPicker(i); });
-  });
+    zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); if (id && ITEMS[id]) placeInSlot(id); });
+    zone.addEventListener('click', () => { if (combining) return; if (!slots[0]) openPicker(0); });
+  }
 
   $('#arriendo-pay').addEventListener('click', resolveRent);
   $('#cierre-reopen').addEventListener('click', reopenHueca);
