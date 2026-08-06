@@ -301,7 +301,12 @@ function renderHud() {
   $('#hud-hearts').innerHTML = heartsHtml(state.rating);
   const modeBtn = $('#hud-mode');
   modeBtn.dataset.mode = state.mode;
-  modeBtn.innerHTML = state.mode === 'servicio' ? '<span class="mode-dot on"></span>Servicio' : '<span class="mode-dot"></span>Tranquilo';
+  /* el rótulo va en su propio span para poder esconderlo en pantallas
+     angostas y dejar solo el puntito, sin que el HUD se desborde */
+  modeBtn.innerHTML = state.mode === 'servicio'
+    ? '<span class="mode-dot on"></span><span class="mode-txt">Servicio</span>'
+    : '<span class="mode-dot"></span><span class="mode-txt">Tranquilo</span>';
+  modeBtn.setAttribute('aria-label', state.mode === 'servicio' ? 'En servicio' : 'Tranquilo');
 }
 function addCoins(n) {
   state.coins += n;

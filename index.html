@@ -97,16 +97,19 @@
 
   <!-- ================= Recetario ================= -->
   <main id="screen-shelf" class="screen">
-    <header class="page-head">
-      <h2 class="hand">El recetario</h2>
-      <div class="shelf-stats">
-        <div class="stat"><span class="stat-n" id="shelf-recipes">0/6</span><span class="stat-l">recetas</span></div>
-        <div class="stat"><span class="stat-n" id="shelf-served">0</span><span class="stat-l">servidos</span></div>
-      </div>
-      <p id="shelf-goal" class="shelf-goal hand"></p>
-    </header>
-    <div id="shelf-books" class="shelf-books"></div>
-    <p class="page-footnote">Toca una página para leerla. Las que siguen en boceto, el barrio las irá despertando.</p>
+    <!-- el recetario es papel puesto sobre el mesón, no texto flotando -->
+    <div class="hoja">
+      <header class="page-head">
+        <h2 class="hand">El recetario</h2>
+        <div class="shelf-stats">
+          <div class="stat"><span class="stat-n" id="shelf-recipes">0/6</span><span class="stat-l">recetas</span></div>
+          <div class="stat"><span class="stat-n" id="shelf-served">0</span><span class="stat-l">servidos</span></div>
+        </div>
+        <p id="shelf-goal" class="shelf-goal hand"></p>
+      </header>
+      <div id="shelf-books" class="shelf-books"></div>
+      <p class="page-footnote">Toca una página para leerla. Las que siguen en boceto, el barrio las irá despertando.</p>
+    </div>
   </main>
 
   <!-- ================= Receta: Moleskine de una hoja por paso ================= -->

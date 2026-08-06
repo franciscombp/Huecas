@@ -147,8 +147,8 @@ svg { display: block; width: 100%; height: 100%; }
 .hud {
   position: absolute; top: 0; left: 0; right: 0;
   height: calc(var(--hud-h) + env(safe-area-inset-top));
-  padding: calc(env(safe-area-inset-top) + .55rem) .9rem 0;
-  display: flex; align-items: flex-start; gap: .6rem;
+  padding: calc(env(safe-area-inset-top) + .55rem) .7rem 0;
+  display: flex; align-items: flex-start; gap: .4rem;
   background: none; border: none;
   z-index: 50; pointer-events: none;
 }
@@ -168,14 +168,14 @@ svg { display: block; width: 100%; height: 100%; }
 @keyframes coin-pulse { 30% { transform: scale(1.1); } }
 
 .hud-hearts {
-  display: flex; gap: .12rem; margin-left: auto; align-items: center;
-  padding: .38rem .6rem;
+  display: flex; gap: .1rem; margin-left: auto; align-items: center;
+  padding: .34rem .45rem;
   background: rgba(255,255,254,.88);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border: 1px solid var(--line); border-radius: 999px;
   box-shadow: var(--emboss), 0 4px 12px -6px rgba(45,38,25,.25);
 }
-.heart { width: 1.05rem; height: 1.05rem; }
+.heart { width: .92rem; height: .92rem; }
 .heart.empty svg { filter: grayscale(1) opacity(.3); }
 .heart.half svg { filter: saturate(.6) opacity(.75); }
 .hud-hearts.bump { animation: hearts-bump .6s ease; }
@@ -185,7 +185,8 @@ svg { display: block; width: 100%; height: 100%; }
 
 .hud-sound, .hud-mode {
   height: 36px; display: inline-flex; align-items: center; gap: .3rem;
-  padding: 0 .7rem; font-size: .88rem; border-radius: 999px;
+  padding: 0 .6rem; font-size: .84rem; border-radius: 999px;
+  flex-shrink: 0;
   background: rgba(255,255,254,.88);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
   border: 1px solid var(--line);
@@ -741,10 +742,22 @@ svg { display: block; width: 100%; height: 100%; }
 .float-back {
   position: absolute; left: .7rem; top: calc(env(safe-area-inset-top) + .55rem);
   z-index: 52; width: 44px; height: 44px; font-size: 1.25rem; color: var(--ink);
-  background: linear-gradient(180deg, #ffffff, #f2f0ea);
-  border: 1px solid var(--line); border-radius: 14px;
-  box-shadow: var(--emboss), 0 2px 3px rgba(45,38,25,.08), 0 10px 22px -10px rgba(45,38,25,.35);
+  background: linear-gradient(180deg, var(--page), var(--page-2));
+  border: none; border-radius: 14px;
+  box-shadow: var(--emboss), 0 2px 3px rgba(90,45,35,.12), 0 10px 22px -10px rgba(90,45,35,.45);
 }
+/* en pantallas angostas el rótulo del modo sobra: el puntito ya lo dice,
+   y así el HUD entero cabe sin comerse su propio margen */
+@media (max-width: 380px) {
+  .hud-mode .mode-txt { display: none; }
+  .hud-mode { padding: 0 .5rem; }
+}
+
+/* donde hay flecha de volver, el HUD se corre para no quedar debajo.
+   Y como ahí no estás en servicio, la fama de la hueca no pinta nada:
+   se oculta y así todo cabe sin apretujarse. */
+body:has(.float-back:not(.hidden)) .hud { padding-left: 3.9rem; }
+body:has(.float-back:not(.hidden)) .hud-hearts { display: none; }
 .float-back.hidden { display: none; }
 .float-back:active { transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(45,38,25,.15); }
 
@@ -778,12 +791,12 @@ svg { display: block; width: 100%; height: 100%; }
   align-items: end;
   position: relative; padding-bottom: 13px;
 }
-/* la repisa donde se paran los libros */
+/* la repisa donde se paran los libros: madera, no una barra blanca */
 .shelf-grid::after {
-  content: ''; position: absolute; left: -.5rem; right: -.5rem; bottom: 0; height: 11px;
-  background: linear-gradient(180deg, #ffffff 0 40%, #e9e6dd 40% 100%);
+  content: ''; position: absolute; left: -.5rem; right: -.5rem; bottom: 0; height: 10px;
+  background: linear-gradient(180deg, #c79a6f 0 38%, #a87b52 38% 100%);
   border-radius: 3px;
-  box-shadow: inset 0 1px 0 #fff, 0 10px 16px -7px rgba(45,38,25,.35);
+  box-shadow: inset 0 1px 0 rgba(255,235,210,.55), 0 9px 15px -8px rgba(90,45,35,.5);
 }
 .book {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: .25rem;
@@ -820,6 +833,29 @@ svg { display: block; width: 100%; height: 100%; }
 }
 .shelf-locked { text-align: center; font-size: 1.15rem; color: var(--ink-2); }
 .page-footnote { text-align: center; font-size: .9rem; font-style: italic; color: var(--ink-2); padding: 0 2rem 2.4rem; }
+
+/* ============================================================
+   LA HOJA — papel puesto sobre el mesón. Todo lo que no es la
+   cocina se lee sobre papel, nunca flotando sobre la encimera
+   (ref-recetario-sobre-la-escena).
+   ============================================================ */
+
+.hoja {
+  position: relative; z-index: 1;
+  max-width: 470px; margin: .3rem auto 0;
+  padding: 1.1rem .9rem 1.4rem;
+  border-radius: 8px 18px 10px 16px;
+  background-image:
+    var(--grain),
+    linear-gradient(178deg, var(--page), var(--page-2) 72%, #f0e5d2);
+  box-shadow: 0 16px 34px -18px rgba(90,45,35,.6), inset 0 1px 0 rgba(255,255,255,.65);
+}
+/* el margen rojo del cuaderno, a la izquierda */
+.hoja::before {
+  content: ''; position: absolute; left: 1.5rem; top: .5rem; bottom: .5rem; width: 1px;
+  background: repeating-linear-gradient(180deg, rgba(200,68,44,.3) 0 6px, transparent 6px 12px);
+  pointer-events: none;
+}
 
 /* ============================================================
    RECETA — EL MOLESKINE (una hoja por paso)
@@ -949,12 +985,34 @@ svg { display: block; width: 100%; height: 100%; }
    MERCADO — la estantería de la lona (víveres de pie)
    ============================================================ */
 
-.mercado-wrap { max-width: 470px; margin: 0 auto; padding: 0 1.2rem 2.5rem; }
+/* LA LONA — el puesto es un toldo de tela tendido sobre la vereda, con
+   la mercadería encima. Antes flotaba sobre el fondo y no se leía como
+   superficie (ref-encimera-cenital: todo se apoya en algo). */
+.mercado-wrap {
+  position: relative; z-index: 1;
+  max-width: 470px; margin: .2rem auto 0;
+  padding: 0 1.1rem 2rem;
+}
+.mercado-wrap::before {
+  content: ''; position: absolute; inset: 2.4rem -.2rem 1rem;
+  z-index: -1; border-radius: 10px 18px 12px 16px;
+  background-image:
+    repeating-linear-gradient(94deg, rgba(160,110,80,.05) 0 3px, transparent 3px 22px),
+    linear-gradient(178deg, var(--page), var(--page-2) 70%, #f0e5d2);
+  box-shadow: 0 14px 30px -16px rgba(90,45,35,.55), inset 0 1px 0 rgba(255,255,255,.6);
+}
 .lona-top {
-  height: 14px; margin-bottom: .9rem; border-radius: 4px;
-  background: repeating-linear-gradient(90deg, #cf4b33 0 26px, #fff 26px 52px);
-  box-shadow: 0 6px 14px -6px rgba(45,38,25,.3), inset 0 1px 0 rgba(255,255,255,.4);
-  opacity: .9;
+  position: relative; z-index: 1;
+  height: 16px; margin-bottom: .9rem;
+  border-radius: 4px 4px 0 0;
+  background: repeating-linear-gradient(90deg, #cf4b33 0 26px, var(--page) 26px 52px);
+  box-shadow: 0 6px 14px -6px rgba(90,45,35,.4), inset 0 1px 0 rgba(255,255,255,.45);
+}
+/* el borde ondulado del toldo */
+.lona-top::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 9px;
+  background: radial-gradient(circle at 13px 0, transparent 12px, #cf4b33 12px 13px, transparent 13px) 0 0 / 26px 9px repeat-x;
+  opacity: .55;
 }
 .mercado-title { font-size: 2.1rem; font-weight: 600; color: var(--rojo); }
 .mercado-sub { font-family: var(--hand); font-size: 1.35rem; color: var(--ink-2); margin: .1rem 0 .6rem; }
@@ -972,11 +1030,18 @@ svg { display: block; width: 100%; height: 100%; }
   gap: 1.1rem .4rem; align-items: end;
   position: relative; padding-bottom: 12px;
 }
+/* el canto de la tabla donde se apoya la mercadería: madera, no una
+   barra blanca flotando */
 .market-grid::after {
-  content: ''; position: absolute; left: -.5rem; right: -.5rem; bottom: 0; height: 10px;
-  background: linear-gradient(180deg, #ffffff 0 40%, #e9e6dd 40% 100%);
+  content: ''; position: absolute; left: -.5rem; right: -.5rem; bottom: 0; height: 9px;
+  background: linear-gradient(180deg, #c79a6f 0 38%, #a87b52 38% 100%);
   border-radius: 3px;
-  box-shadow: inset 0 1px 0 #fff, 0 9px 15px -7px rgba(45,38,25,.32);
+  box-shadow: inset 0 1px 0 rgba(255,235,210,.55), 0 8px 14px -8px rgba(90,45,35,.5);
+}
+/* el mensaje de "aún no hay nada" ocupa la fila entera, no una columna */
+.sell-empty, .market-empty {
+  grid-column: 1 / -1; text-align: center;
+  font-size: 1.15rem; color: #7d5a48; padding: .5rem 0 .9rem;
 }
 .market-item {
   display: flex; flex-direction: column; align-items: center; gap: .3rem; text-align: center;

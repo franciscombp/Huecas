@@ -192,6 +192,24 @@ Nada aparece de golpe ni se mueve en línea recta.
 Los modales (`carta`, `escena`, `celebra`, `arriendo`, `cierre`, `despensa`)
 son siempre **papel**: son páginas del cuaderno, no ventanas de sistema.
 
+### Todo lo que no es la cocina se apoya en algo
+
+La cocina es el único sitio donde el contenido vive directamente sobre la
+encimera, porque ahí la encimera *es* el escenario. En las demás pantallas
+el contenido va sobre una superficie:
+
+| Pantalla | Su superficie |
+|---|---|
+| Cuaderno / Receta | `.hoja` — papel crema con margen rojo punteado |
+| Mercado | `.mercado-wrap::before` — la lona tendida, con su toldo y festón |
+
+**Nunca dejes texto flotando sobre la encimera.** Sin superficie se lee
+como interfaz pegada encima de la escena, no como algo que está ahí.
+
+Y los cantos de repisa (`.market-grid::after`, `.shelf-grid::after`) son
+**madera**, no barras blancas: sobre papel blanco no se notaba, sobre la
+encimera cálida una barra blanca se lee como un error de render.
+
 ---
 
 ## 10. Lista de verificación antes de dar algo por terminado
