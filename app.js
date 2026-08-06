@@ -990,6 +990,7 @@ function renderCocina() {
   renderMesaAction();
   renderRiddle();
   renderReady();
+  renderEncimera();
   updateCoach();
 }
 
@@ -1068,7 +1069,7 @@ function renderSlots() {
   zone.innerHTML = '';
   zone.classList.toggle('filled', !!slots[0]);
   if (slots[0]) { const card = itemCard(slots[0]); card.tabIndex = -1; card.style.pointerEvents = 'none'; zone.appendChild(card); }
-  else zone.innerHTML = `<span class="slot-plus" aria-hidden="true">+</span><span class="slot-add hand">agregar a la mesa</span>`;
+  else zone.innerHTML = `<span class="slot-add hand">trae algo del mesón</span>`;
   $('#mesa-clear').style.display = slots[0] ? '' : 'none';
 }
 
@@ -1136,7 +1137,7 @@ function renderMesaAction() {
   const x = slots[0];
   if (!x) return;                        /* la casilla vacía ya es el agregar */
 
-  zone.appendChild(actionBtn(' add', '＋ Agregar', 'usar', () => openPicker(0)));
+  /* nada de "＋ Agregar": lo de encima se trae arrastrando del mesón */
 
   if (isDish(x)) {
     const wanted = queue.find(c => c.dish === x);
@@ -1231,7 +1232,139 @@ function stepNeeds(id) {
   return s.a === id || s.b === id;
 }
 
-/* --- despensa como hoja inferior: se abre al tocar el + de la mesa --- */
+/* ============================================================
+   LA ENCIMERA — tu despensa vive a la vista sobre el mesón, no
+   dentro de un cajón. Se arrastra a la mesa con el dedo, y un
+   toque simple hace lo mismo (arrastrar nunca es obligatorio).
+   Ver ESTILO.md §5.
+   ============================================================ */
+
+function renderEncimera() {
+  const wrap = $('#encimera');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const ing   = Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient' && count(id) > 0);
+  const preps = Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep' && count(id) > 0);
+  const listos = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0);
+  const orden = (a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name);
+
+  repisa(wrap, 'a la mano', state.tools.slice());
+  repisa(wrap, 'en preparación', [...listos.sort(orden), ...preps.sort(orden)]);
+  repisa(wrap, 'en la despensa', ing.sort(orden));
+
+  if (!ing.length && !preps.length && !listos.length) {
+    wrap.appendChild(el('p', 'encimera-vacia hand', 'La despensa está vacía. Date una vuelta por el mercado.'));
+  }
+  /* comprar sí es una decisión, y para eso sí vale un botón */
+  const comprar = el('button', 'encimera-comprar', '🧺 comprar en la lona');
+  comprar.type = 'button';
+  comprar.addEventListener('click', () => openPicker(0));
+  wrap.appendChild(comprar);
+}
+
+function repisa(wrap, titulo, ids) {
+  if (!ids.length) return;
+  const sec = el('div', 'repisa' + (titulo === 'a la mano' ? ' repisa-tools' : ''));
+  sec.appendChild(el('span', 'repisa-label hand', titulo));
+  const fila = el('div', 'repisa-fila');
+  ids.forEach(id => fila.appendChild(objetoDeMeson(id)));
+  sec.appendChild(fila);
+  wrap.appendChild(sec);
+}
+
+/* un objeto apoyado en el mesón: icono, sombra y su cuenta */
+function objetoDeMeson(id) {
+  const item = ITEMS[id];
+  const tool = isTool(id);
+  const enMesa = slots.filter(s => s === id).length;
+  const gastado = !tool && count(id) - enMesa <= 0;
+
+  const nodo = el('div', 'objeto type-' + item.type + (gastado || (tool && isDull(id)) ? ' agotado' : ''));
+  nodo.dataset.id = id;
+  nodo.setAttribute('role', 'button');
+  nodo.setAttribute('tabindex', '0');
+  nodo.setAttribute('aria-label', item.name);
+  /* lo que pide el paso actual se ofrece solo, sin que haya que leer */
+  if (stepNeeds(id) && !gastado) nodo.classList.add('sugerido');
+
+  const insignia = tool
+    ? (item.wear ? `<span class="objeto-vida">${vidaUtil(id)}</span>` : '')
+    : `<span class="objeto-cant">${count(id)}</span>`;
+  nodo.innerHTML = `
+    ${tool ? '' : insignia}
+    <div class="objeto-icono">${iconOf(id)}</div>
+    <span class="objeto-sombra" aria-hidden="true"></span>
+    <span class="objeto-nombre">${item.name}</span>
+    ${tool ? insignia : ''}`;
+  inkState(nodo.querySelector('.objeto-icono'), id);   /* boceto→color, GDD §3.2 */
+
+  hacerArrastrable(nodo, id);
+  nodo.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); placeInSlot(id); }
+  });
+  return nodo;
+}
+function vidaUtil(id) {
+  const max = ITEMS[id].wear || 0, left = state.toolWear[id] ?? max;
+  let out = '';
+  for (let i = 0; i < max; i++) out += `<i class="${i < left ? '' : 'gastado'}"></i>`;
+  return out;
+}
+
+/* ---------- arrastrar del mesón a la mesa ---------- */
+
+let arrastre = null;
+function hacerArrastrable(nodo, id) {
+  nodo.addEventListener('pointerdown', (e) => {
+    if (combining) return;
+    if (e.button != null && e.button !== 0) return;
+    arrastre = { id, x0: e.clientX, y0: e.clientY, movido: false, fantasma: null };
+    try { nodo.setPointerCapture(e.pointerId); } catch (err) {}
+    sfx('tab'); buzz(8);
+  });
+  nodo.addEventListener('pointermove', (e) => {
+    if (!arrastre || arrastre.id !== id) return;
+    const dx = e.clientX - arrastre.x0, dy = e.clientY - arrastre.y0;
+    if (!arrastre.movido && Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+    if (!arrastre.movido) {
+      arrastre.movido = true;
+      const f = el('div', 'objeto-fantasma');
+      f.innerHTML = iconOf(id);
+      inkState(f, id);
+      document.body.appendChild(f);
+      arrastre.fantasma = f;
+    }
+    arrastre.fantasma.style.left = e.clientX + 'px';
+    arrastre.fantasma.style.top = e.clientY + 'px';
+    const z = $('#slot-0');
+    if (z) z.classList.toggle('over', sobreLaMesa(e.clientX, e.clientY));
+  });
+  const soltar = (e) => {
+    if (!arrastre || arrastre.id !== id) return;
+    const { movido, fantasma } = arrastre;
+    if (fantasma) fantasma.remove();
+    const z = $('#slot-0'); if (z) z.classList.remove('over');
+    /* un toque simple también sirve: no obliga a arrastrar */
+    const enMesa = movido ? sobreLaMesa(e.clientX, e.clientY) : true;
+    arrastre = null;
+    if (enMesa) placeInSlot(id);
+  };
+  nodo.addEventListener('pointerup', soltar);
+  nodo.addEventListener('pointercancel', () => {
+    if (arrastre && arrastre.fantasma) arrastre.fantasma.remove();
+    const z = $('#slot-0'); if (z) z.classList.remove('over');
+    arrastre = null;
+  });
+}
+function sobreLaMesa(x, y) {
+  const z = $('#slot-0'); if (!z) return false;
+  const r = z.getBoundingClientRect();
+  const m = 30;   /* la mesa perdona: no hay que apuntar fino */
+  return x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
+}
+
+/* --- la lona: comprar sigue siendo hoja inferior, es una decisión --- */
 function openPicker(index) {
   if (combining) return;
   pickerSlot = index;
@@ -1292,21 +1425,13 @@ function sheetSection(title, cards) {
 function renderPicker() {
   const step = currentStep();
   const need = $('#despensa-need');
-  const base = slots[0];
-  if (base) {
-    need.innerHTML = `En la mesa: <b>${ITEMS[base].name}</b>. Lo que elijas se usará encima. ${step ? 'Lo que sirve brilla ✨' : ''}`;
-  } else if (step) {
-    need.innerHTML = `El cuaderno pide: <b>${ITEMS[step.a].name}</b> + <b>${ITEMS[step.b].name}</b>. Lo que sirve brilla ✨`;
-  } else { need.textContent = 'Elige qué poner en la mesa.'; }
+  if (step) {
+    need.innerHTML = `El cuaderno pide: <b>${ITEMS[step.a].name}</b> + <b>${ITEMS[step.b].name}</b>. Lo que te falta brilla ✨`;
+  } else { need.textContent = 'Repón lo que se te acabó.'; }
 
+  /* la hoja ya solo sirve para COMPRAR: lo que tienes vive sobre el
+     mesón, a la vista, y se arrastra desde ahí (ESTILO.md §5) */
   const body = $('#despensa-body'); body.innerHTML = '';
-  const ing = Object.keys(state.inv).filter(id => ITEMS[id].type === 'ingredient' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-  const preps = Object.keys(state.inv).filter(id => ITEMS[id].type === 'prep' && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-  /* los platos listos también son insumo (recalentar, bases, combos) */
-  const listos = Object.keys(state.inv).filter(id => isDone(id) && count(id) > 0).sort((a, b) => ITEMS[a].name.localeCompare(ITEMS[b].name));
-  const mine = [...listos, ...preps, ...ing];
-  body.appendChild(sheetSection('Tu despensa', mine.map(id => pickCard(id))));
-  body.appendChild(sheetSection('Utensilios', state.tools.map(id => pickCard(id))));
   const buyable = marketIngredients().filter(id => ITEMS[id].price != null);
   body.appendChild(sheetSection('En la lona · comprar', buyable.map(id => buyCard(id))));
 }
@@ -1321,8 +1446,8 @@ function updateCoach() {
   const hide = state.tutDone || currentScreen !== 'cocina' || state.mode !== 'servicio' || !c || count(c.dish) > 0;
   if (hide) { coach.classList.add('hidden'); return; }
   $('#coach-text').textContent = slots[0]
-    ? 'Elige una acción, o ＋ Agrega lo que pide el cuaderno 👆'
-    : 'Toca ➕ y pon lo que pide el cuaderno';
+    ? 'Ahora trae encima lo que brilla en el mesón'
+    : 'Arrastra a la mesa lo que brilla en el mesón';
   coach.classList.remove('hidden');
 }
 
@@ -1661,7 +1786,8 @@ function bindEvents() {
     zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('over'));
     zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('over'); const id = e.dataTransfer.getData('text/plain'); if (id && ITEMS[id]) placeInSlot(id); });
-    zone.addEventListener('click', () => { if (combining) return; if (!slots[0]) openPicker(0); });
+    /* tocar la mesa la limpia; lo que entra viene arrastrado del mesón */
+    zone.addEventListener('click', () => { if (combining) return; if (slots[0]) clearMesa(); });
   }
 
   $('#cocina-riddle').addEventListener('click', riddleEscena);

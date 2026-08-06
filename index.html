@@ -81,6 +81,13 @@
             <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
           </div>
         </div>
+
+        <div id="coach" class="coach hidden" aria-live="polite">
+          <div class="coach-bubble"><span id="coach-text"></span></div>
+        </div>
+
+        <!-- la encimera: tu despensa a la vista, se arrastra a la mesa -->
+        <div id="encimera" class="encimera"></div>
       </section>
 
     </div>
@@ -159,9 +166,6 @@
   </main>
 
   <!-- Coach: guía paso a paso (señala qué hacer) -->
-  <div id="coach" class="coach hidden" aria-live="polite">
-    <div class="coach-bubble"><span id="coach-text"></span></div>
-  </div>
 
   <!-- Despensa: se abre al tocar el + de la mesa -->
   <div id="modal-despensa" class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="despensa-title">
