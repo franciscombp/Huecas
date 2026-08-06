@@ -1071,6 +1071,9 @@ function renderSlots() {
   if (slots[0]) { const card = itemCard(slots[0]); card.tabIndex = -1; card.style.pointerEvents = 'none'; zone.appendChild(card); }
   else zone.innerHTML = `<span class="slot-add hand">trae algo del mesón</span>`;
   $('#mesa-clear').style.display = slots[0] ? '' : 'none';
+  /* la brasa se enciende cuando hay algo al fuego */
+  const horn = document.querySelector('.hornilla');
+  if (horn) horn.classList.toggle('encendida', !!slots[0]);
 }
 
 function verbOf(sr) {

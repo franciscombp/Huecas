@@ -520,51 +520,100 @@ svg { display: block; width: 100%; height: 100%; }
   background: radial-gradient(50% 100% at 50% 40%, rgba(70,50,20,.22), transparent 75%);
   filter: blur(3px); z-index: -1;
 }
-.mesa {
-  background: linear-gradient(180deg, #ffffff 0%, #f8f7f2 70%, #efede5 100%);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  box-shadow: var(--emboss), 0 2px 3px rgba(45,38,25,.06);
-  padding: .7rem .8rem .6rem;
-  text-align: center;
-  transform: rotateX(4.5deg);
-  transform-origin: 50% -30%;
+/* LA HORNILLA — el único punto oscuro de la escena, y por eso atrae la
+   mirada (ref-encimera-cenital / ref-hornilla-vapor) */
+.mesa.hornilla {
   position: relative;
+  width: fit-content; margin: 0 auto;      /* la hornilla es del tamaño de la olla, no del ancho */
+  padding: .8rem;
+  border-radius: 22px;
+  overflow: hidden;                        /* que ni parrillas ni brasa se salgan del fogón */
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, #4b3f50 0%, #3b3040 60%, #2e2634 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -6px 14px rgba(0,0,0,.4),
+    0 14px 26px -12px rgba(60,35,50,.6);
 }
-/* canto frontal de la tabla */
-.mesa::after {
-  content: ''; position: absolute; left: 8px; right: 8px; bottom: -8px; height: 8px;
-  background: linear-gradient(180deg, #e6e2d8, #d4cfc0);
-  border-radius: 0 0 16px 16px;
-  z-index: -1;
+/* el aro de hierro de la hornilla, bajo la olla */
+.mesa.hornilla::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 122%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(0,0,0,.4) 0deg 3deg, transparent 3deg 45deg);
+  pointer-events: none;
 }
+/* la brasa: se enciende cuando hay algo cocinándose */
+.mesa.hornilla::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 118%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 40%, rgba(224,104,72,.55) 52%, transparent 66%);
+  opacity: 0; transition: opacity .35s ease; pointer-events: none;
+}
+.mesa.hornilla.encendida::after { opacity: 1; animation: brasa-latir 1.7s ease-in-out infinite; }
+@keyframes brasa-latir { 50% { opacity: .5; } }
 
-.cocina-surface { display: flex; align-items: center; justify-content: center; gap: .8rem; position: relative; }
+.cocina-surface { display: flex; align-items: center; justify-content: center; position: relative; }
 .cocina-surface .plus { font-size: 1.9rem; color: var(--ink-2); opacity: .55; }
 .cocina-surface.shake { animation: shake .4s ease; }
 @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
 .cocina-surface.success { animation: pop .5s ease; }
-@keyframes pop { 40% { transform: scale(1.05); } }
+@keyframes pop { 40% { transform: scale(1.06); } }
 
+/* vapor saliendo de la olla */
+.olla-vapor { position: absolute; left: 50%; top: -4%; z-index: 4; pointer-events: none; }
+.olla-vapor i {
+  position: absolute; bottom: 0; width: 12px; height: 12px; border-radius: 50%;
+  background: rgba(255,248,240,.55); opacity: 0;
+}
+.cocina-surface:has(.slot.filled) .olla-vapor i { animation: vapor-sube 2.6s ease-out infinite; }
+.olla-vapor i:nth-child(1) { left: -19px; animation-delay: 0s; }
+.olla-vapor i:nth-child(2) { left: -2px;  animation-delay: .85s; }
+.olla-vapor i:nth-child(3) { left: 15px;  animation-delay: 1.7s; }
+@keyframes vapor-sube {
+  0%   { opacity: 0; transform: translateY(0) scale(.5); }
+  25%  { opacity: .7; }
+  100% { opacity: 0; transform: translateY(-58px) scale(1.9); }
+}
+
+/* LA OLLA — redonda, de peltre, con el guiso adentro */
 .slot {
+  position: relative; z-index: 2;
   width: clamp(96px, 27vw, 124px); height: clamp(96px, 27vw, 124px);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem;
-  background: var(--ivory);
-  border: 2px dashed rgba(60,55,45,.22);
-  border-radius: 20px;
-  box-shadow: inset 0 2px 6px rgba(45,38,25,.07);
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-  position: relative;
+  border: none; border-radius: 50%;
+  background:
+    radial-gradient(circle at 40% 30%, #cfc0d8 0 4%, #a996b4 24%, #8a7796 60%, #5f5069 100%);
+  box-shadow:
+    inset 0 5px 12px rgba(255,255,255,.22),
+    inset 0 -9px 16px rgba(0,0,0,.42),
+    0 8px 16px -5px rgba(45,25,45,.55);
+  transition: transform .18s cubic-bezier(.3,1.6,.4,1), box-shadow .18s ease;
 }
-.slot .slot-plus { font-size: 1.9rem; line-height: 1; color: var(--rojo); opacity: .8; }
-.slot .slot-add { font-size: 1.05rem; color: var(--ink-2); }
-.slot.filled {
-  border: 1px solid var(--line); border-style: solid;
-  background: linear-gradient(180deg, #ffffff, #f7f6f1);
-  box-shadow: var(--emboss), 0 6px 16px -8px rgba(45,38,25,.28);
+/* el fondo de la olla */
+.slot::before {
+  content: ''; position: absolute; inset: 12%; border-radius: 50%;
+  background: radial-gradient(circle at 44% 34%, #6d5c79, #40354a 78%);
+  box-shadow: inset 0 4px 11px rgba(0,0,0,.5);
 }
-.slot.over { border-color: var(--verde); background: #f4f8f1; box-shadow: 0 0 0 4px rgba(95,127,86,.18); }
-.slot .item-card { width: 88%; pointer-events: none; border: none; background: none; box-shadow: none; }
+.slot .slot-add {
+  position: relative; z-index: 2;
+  font-size: .95rem; line-height: 1.1; color: rgba(255,240,228,.62); padding: 0 16%;
+  transition: opacity .15s ease;
+}
+.slot.filled { background:
+    radial-gradient(circle at 40% 30%, #d4c6dc 0 4%, #ae9cba 24%, #8a7796 60%, #5f5069 100%); }
+.slot.over { transform: scale(1.09); box-shadow: inset 0 5px 12px rgba(255,255,255,.28), 0 0 0 5px rgba(201,152,47,.6), 0 12px 22px -5px rgba(45,25,45,.6); }
+.slot.over .slot-add { opacity: 0; }
+.slot .item-card {
+  position: relative; z-index: 3;
+  width: 82%; pointer-events: none; border: none; background: none; box-shadow: none;
+  animation: cae-en-olla .4s cubic-bezier(.3,1.6,.4,1) both;
+}
+@keyframes cae-en-olla { from { opacity: 0; transform: translateY(-34px) scale(1.3) rotate(-10deg); } }
+.slot .item-card .name { color: #fff3e8; text-shadow: 0 1px 3px rgba(30,15,30,.7); }
 
 .mesa-action { min-height: 0; display: flex; align-items: center; justify-content: center; gap: .55rem; margin-top: .55rem; flex-wrap: wrap; }
 .mesa-action:empty { display: none; margin-top: 0; }
@@ -593,7 +642,7 @@ svg { display: block; width: 100%; height: 100%; }
 }
 .cook-btn.add .cook-ic { display: none; }
 .mesa-nope { font-family: var(--hand); font-size: 1.2rem; color: var(--ink-2); }
-.mesa-clear { font-size: .85rem; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; margin-top: .5rem; }
+.mesa-clear { display: block; margin: .45rem auto 0; font-size: .85rem; color: #7d5a48; text-decoration: underline; text-underline-offset: 3px; }
 
 /* ============================================================
    FICHAS (item-card)
@@ -656,7 +705,15 @@ svg { display: block; width: 100%; height: 100%; }
   35%  { filter: grayscale(.7) brightness(1.06) opacity(.9); }
   100% { filter: none; }
 }
-@keyframes paint-sweep { to { background-position: -140% 0; } }
+/* el destello tiene que SALIR del icono al terminar: con background-size
+   300% y un final de -140% la banda blanca se quedaba aparcada encima.
+   Sobre el papel blanco de antes no se notaba; sobre la encimera cálida
+   dejaba un parche. Se va del todo y además se desvanece. */
+@keyframes paint-sweep {
+  0%   { background-position: 120% 0; opacity: 1; }
+  85%  { opacity: 1; }
+  100% { background-position: -240% 0; opacity: 0; }
+}
 
 /* ============================================================
    NAVEGACIÓN FLOTANTE

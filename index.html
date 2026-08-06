@@ -73,13 +73,15 @@
       <section class="cocina">
         <p id="cocina-riddle" class="cocina-riddle" aria-live="polite"></p>
         <div class="mesa-persp">
-          <div class="mesa">
+          <!-- la hornilla: el punto oscuro de la escena, como en las referencias -->
+          <div class="mesa hornilla">
             <div id="cocina-surface" class="cocina-surface">
-              <button type="button" id="slot-0" class="slot" aria-label="Lo que está en la mesa"></button>
+              <div class="olla-vapor" aria-hidden="true"><i></i><i></i><i></i></div>
+              <button type="button" id="slot-0" class="slot" aria-label="Lo que está en la olla"></button>
             </div>
-            <div id="mesa-action" class="mesa-action"></div>
-            <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
           </div>
+          <div id="mesa-action" class="mesa-action"></div>
+          <button type="button" id="mesa-clear" class="mesa-clear">limpiar la mesa</button>
         </div>
 
         <div id="coach" class="coach hidden" aria-live="polite">

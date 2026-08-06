@@ -19,7 +19,28 @@ y se suelta en la mesa. Los botones son el último recurso, no el primero.
 
 ---
 
-## 2. La regla que lo sostiene todo: boceto → color
+## 2. Referencias
+
+Guardadas en `referencias/`. La familia visual es la de los juegos de
+cocina contemplativos tipo *Venba*: plano cenital, pintado a mano, cálido
+y saturado, con todo apoyado sobre la encimera.
+
+| Archivo | Qué tomamos de ahí |
+|---|---|
+| `ref-encimera-cenital.webp` | **La referencia madre.** Plano cenital: la olla al centro sobre la hornilla oscura, los cuencos regados alrededor, el recetario a un lado. Nada está "en un panel": todo descansa sobre la mesa, y hay una mano que agarra las cosas. |
+| `ref-hornilla-vapor.webp` | La hornilla como objeto oscuro real, con el calor tiñendo el metal alrededor. El único punto oscuro de la escena, y por eso atrae la mirada. |
+| `ref-plato-terminado.jpeg` | El momento de servir: el plato terminado es lo más saturado de la pantalla, y la escena habla desde la olla, no desde una barra de sistema. |
+| `ref-mesa-servida.webp` | La paleta de la comida: corales, morados profundos, dorados. La mesa es el fondo; la comida es la estrella. |
+| `ref-recetario-sobre-la-escena.jpeg` | El recetario: papel real puesto encima de la escena, dibujos a mano alzada, texto escrito a mano con **palabras clave en color**. No es una tabla de datos, es el cuaderno de alguien. |
+
+**Ojo con la diferencia clave:** en las referencias el mundo llega ya
+coloreado. En Huecas **no**, porque el color es la recompensa (§2b). La
+referencia manda en la *forma* (cenital, objetos con peso, hornilla
+oscura, papel encima); la regla de boceto→color manda en el *color*.
+
+---
+
+## 2b. La regla que lo sostiene todo: boceto → color
 
 Es el corazón del GDD (§3.2) y **manda sobre cualquier decisión visual**.
 
