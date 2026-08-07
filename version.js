@@ -7,5 +7,5 @@
    nota en una línea, como para leerla en un toast.
    ============================================================ */
 
-const APP_VERSION = 'v24';
-const APP_NOTA = 'La cocina coral de las referencias, y la app ya se puede instalar y jugar sin internet.';
+const APP_VERSION = 'v25';
+const APP_NOTA = 'El mercado y el cuaderno ahora asoman como pestañas de recetario, coral y de fiesta.';
