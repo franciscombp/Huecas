@@ -212,6 +212,19 @@ encimera cálida una barra blanca se lee como un error de render.
 
 ---
 
+## 9b. Publicar una versión
+
+`version.js` es la única fuente de verdad: `APP_VERSION` nombra la caché
+del service worker y `APP_NOTA` es la novedad que el jugador lee al
+actualizar. **Cada push que cambie el juego debe subir la versión y
+escribir su nota** — si no, la app instalada nunca se entera de que hay
+algo nuevo. El flujo del jugador: juega offline con lo que tiene; al
+volver la conexión la app busca versión nueva, avisa con el botón
+"Actualizar", y solo actualiza cuando él acepta (nunca a mitad de
+partida). Tras actualizar, la nota se muestra una sola vez.
+
+---
+
 ## 10. Lista de verificación antes de dar algo por terminado
 
 - [ ] ¿Lo no descubierto sigue en boceto, y el color vuelve al descifrarlo?

@@ -1827,6 +1827,65 @@ function init() {
   renderHud();
   show('cover');
   startClock();
+  iniciarActualizaciones();
+}
+
+/* ============================================================
+   Actualizaciones — la app instalada avisa cuando hay versión
+   nueva y se actualiza al aceptar; nunca a mitad de partida.
+   ============================================================ */
+
+const VERSION_VISTA_KEY = 'huecas_version_vista';
+
+function iniciarActualizaciones() {
+  /* si esta carga YA es una versión recién estrenada, cuenta qué trae */
+  const vista = localStorage.getItem(VERSION_VISTA_KEY);
+  if (vista && vista !== APP_VERSION) {
+    setTimeout(() => toast(`Huecas se actualizó (${APP_VERSION}): ${APP_NOTA}`, 'seal'), 1200);
+  }
+  localStorage.setItem(VERSION_VISTA_KEY, APP_VERSION);
+
+  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  /* updateViaCache 'none': sin esto, version.js (que entra por
+     importScripts) se sirve de la caché HTTP y el navegador nunca
+     se entera de que hay versión nueva */
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    /* ya había una versión nueva esperando desde una visita anterior */
+    if (reg.waiting) ofrecerActualizacion(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const nuevo = reg.installing;
+      if (!nuevo) return;
+      nuevo.addEventListener('statechange', () => {
+        /* instalado y hay un SW viejo controlando = versión nueva lista */
+        if (nuevo.state === 'installed' && navigator.serviceWorker.controller) ofrecerActualizacion(nuevo);
+      });
+    });
+    /* buscar versión nueva al volver la conexión y al volver a la app */
+    window.addEventListener('online', () => reg.update().catch(() => {}));
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) reg.update().catch(() => {});
+    });
+  }).catch(() => {});
+
+  /* cuando el SW nuevo toma el control, se recarga UNA vez */
+  let recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (recargando) return; recargando = true;
+    location.reload();
+  });
+}
+
+function ofrecerActualizacion(sw) {
+  const viejo = document.querySelector('.update-aviso');
+  if (viejo) viejo.remove();
+  const aviso = el('div', 'update-aviso');
+  aviso.innerHTML = `<span class="update-txt">Hay una versión nueva de Huecas</span>`;
+  const btn = el('button', 'update-btn', 'Actualizar');
+  btn.type = 'button';
+  btn.addEventListener('click', () => { btn.disabled = true; btn.textContent = 'Un momento…'; sw.postMessage('SKIP_WAITING'); });
+  aviso.appendChild(btn);
+  document.body.appendChild(aviso);
+  requestAnimationFrame(() => aviso.classList.add('visible'));
 }
 
 document.addEventListener('DOMContentLoaded', init);

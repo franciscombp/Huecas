@@ -12,27 +12,35 @@
    ============================================================ */
 
 :root {
-  /* LA ENCIMERA — el mundo donde pasa todo. Cálido, de barro cocido.
+  /* LA ENCIMERA — el mundo donde pasa todo. Coral cálido, como la mesa
+     de las referencias (ref-encimera-cenital, ref-mesa-servida).
      Regla que sostiene el boceto→color (GDD §3.2): el mundo es cálido,
      pero el PAPEL sigue siendo papel. Así lo que aún no descubres se
      lee como lápiz sobre una página, no como algo apagado. */
-  --mesa:       #dca88c;
-  --mesa-clara: #ebc3a8;
-  --mesa-honda: #bf8869;
+  --mesa:       #e8a596;
+  --mesa-clara: #f2bfae;
+  --mesa-honda: #cf8172;
+
+  /* el fogón: el único punto oscuro, y por eso atrae la mirada */
+  --fogon:       #4a3550;
+  --fogon-2:     #3a2740;
+  --fogon-brasa: #d95f43;
 
   /* papel: crema cálida, nunca blanco clínico */
-  --page:    #fdf7ec;
-  --page-2:  #f7efe0;
-  --ivory:   #fbf5e9;
-  --mist:    #ece2d0;
+  --page:    #fdf0e2;
+  --page-2:  #f7e3cd;
+  --ivory:   #fbeadb;
+  --mist:    #eeddc9;
   /* la hueca (zona del comensal): crema cálida de la referencia */
-  --hueca:   #f6ecdb;
-  --hueca-2: #f1e3cc;
-  /* tinta */
-  --ink:     #2f2b25;
-  --ink-2:   #8c857a;
-  --line:    rgba(60, 55, 45, .12);
-  --line-soft: rgba(60, 55, 45, .07);
+  --hueca:   #f8e7d5;
+  --hueca-2: #f2dcc5;
+  /* tinta: ciruela cálida, no gris de oficina */
+  --ink:     #4a2f3d;
+  --ink-2:   #8a6472;
+  --line:    rgba(74, 47, 61, .18);
+  --line-soft: rgba(74, 47, 61, .09);
+  /* rebote de algo que cae sobre la madera */
+  --plop: cubic-bezier(.3, 1.6, .4, 1);
   /* acentos */
   --rojo:    #c8442c;
   --rojo-d:  #a83420;
@@ -115,28 +123,30 @@ svg { display: block; width: 100%; height: 100%; }
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
   padding: .8rem 1.7rem;
   font-size: 1.1rem; font-weight: 600; color: #fff;
-  background: linear-gradient(180deg, #d95c42, var(--rojo) 45%, var(--rojo-d));
+  background: linear-gradient(180deg, #e06a4c 0%, var(--rojo) 55%, var(--rojo-d) 100%);
   border-radius: 14px;
-  border: 1px solid rgba(120, 30, 14, .5);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 1px 2px rgba(45,38,25,.2), 0 8px 20px -8px rgba(200,68,44,.55);
-  text-shadow: 0 -1px 0 rgba(0,0,0,.18);
-  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  border: none; border-bottom: 4px solid #8e2c17;
+  box-shadow: inset 0 1px 0 rgba(255,225,200,.45), 0 8px 18px -8px rgba(140,45,25,.6);
+  text-shadow: 0 1px 1px rgba(120,30,14,.5);
+  transition: transform .1s ease, border-bottom-width .1s ease, filter .12s ease;
 }
 .btn-main:hover { filter: brightness(1.04); }
-.btn-main:active { transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0,0,0,.25); }
+.btn-main:active { transform: translateY(3px); border-bottom-width: 1px; }
+.btn-main:disabled { filter: grayscale(.55) brightness(.95); opacity: .6; }
 .btn-main.wide { width: 100%; padding: .95rem 1rem; font-size: 1.18rem; }
 .btn-main.small { padding: .5rem 1rem; font-size: .95rem; border-radius: 11px; }
 
 .btn-ghost {
   display: inline-flex; align-items: center; justify-content: center; gap: .35rem;
-  padding: .75rem 1.4rem; font-size: 1.02rem; font-weight: 500; color: var(--ink);
-  background: var(--btn-white);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--emboss), 0 1px 3px rgba(45,38,25,.12);
-  transition: transform .12s ease, box-shadow .12s ease;
+  padding: .7rem 1.4rem; font-size: 1.02rem; font-weight: 600; color: var(--ink);
+  background: linear-gradient(180deg, var(--page), var(--page-2));
+  border: none; border-bottom: 3px solid rgba(200,68,44,.3);
+  border-radius: 13px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 5px 12px -7px rgba(140,45,25,.5);
+  transition: transform .1s ease, border-bottom-width .1s ease;
 }
-.btn-ghost:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(45,38,25,.12); }
+.btn-ghost:active { transform: translateY(2px); border-bottom-width: 1px; }
+.btn-ghost:disabled { opacity: .5; }
 .btn-ghost.small { padding: .48rem .9rem; font-size: .88rem; border-radius: 11px; }
 .btn-ghost.small small { color: var(--ink-2); margin-left: .2rem; }
 
@@ -531,7 +541,7 @@ svg { display: block; width: 100%; height: 100%; }
   overflow: hidden;                        /* que ni parrillas ni brasa se salgan del fogón */
   background:
     repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 4px),
-    linear-gradient(180deg, #4b3f50 0%, #3b3040 60%, #2e2634 100%);
+    linear-gradient(180deg, #5a4260 0%, var(--fogon) 55%, var(--fogon-2) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.14),
     inset 0 -6px 14px rgba(0,0,0,.4),
@@ -550,7 +560,7 @@ svg { display: block; width: 100%; height: 100%; }
   content: ''; position: absolute; left: 50%; top: 50%;
   width: 118%; aspect-ratio: 1; transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, transparent 40%, rgba(224,104,72,.55) 52%, transparent 66%);
+  background: radial-gradient(circle, transparent 40%, rgba(217,95,67,.6) 52%, transparent 66%);
   opacity: 0; transition: opacity .35s ease; pointer-events: none;
 }
 .mesa.hornilla.encendida::after { opacity: 1; animation: brasa-latir 1.7s ease-in-out infinite; }
@@ -622,8 +632,8 @@ svg { display: block; width: 100%; height: 100%; }
   display: inline-flex; align-items: center; gap: .5rem;
   padding: .8rem 1.9rem;
   font-size: 1.28rem; font-weight: 600; color: #fff;
-  background: linear-gradient(180deg, #d95c42, var(--rojo) 45%, var(--rojo-d));
-  border: 1px solid rgba(120, 30, 14, .5);
+  background: linear-gradient(180deg, #e06a4c 0%, var(--rojo) 55%, var(--rojo-d) 100%);
+  border: none; border-bottom: 4px solid #8e2c17;
   border-radius: 16px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 2px 3px rgba(45,38,25,.18), 0 10px 24px -8px rgba(200,68,44,.55);
   text-shadow: 0 -1px 0 rgba(0,0,0,.18);
@@ -746,6 +756,31 @@ svg { display: block; width: 100%; height: 100%; }
   border: none; border-radius: 14px;
   box-shadow: var(--emboss), 0 2px 3px rgba(90,45,35,.12), 0 10px 22px -10px rgba(90,45,35,.45);
 }
+/* aviso de versión nueva: papel sobre la escena, con su botón de barro */
+.update-aviso {
+  position: fixed; left: 50%; transform: translateX(-50%) translateY(140%);
+  bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 120;
+  display: flex; align-items: center; gap: .8rem;
+  width: max-content; max-width: min(380px, calc(100% - 1.6rem));
+  padding: .7rem .95rem;
+  background: linear-gradient(178deg, var(--page), var(--page-2));
+  border-left: 5px solid var(--rojo);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -14px rgba(90,45,35,.6), inset 0 1px 0 rgba(255,255,255,.65);
+  transition: transform .4s var(--plop);
+}
+.update-aviso.visible { transform: translateX(-50%) translateY(0); }
+.update-txt { font-size: .95rem; font-weight: 600; color: var(--ink); }
+.update-btn {
+  flex-shrink: 0; padding: .45rem 1rem;
+  font-size: .95rem; font-weight: 700; color: #fff4ea;
+  background: linear-gradient(180deg, #e06a4c, var(--rojo-d));
+  border: none; border-bottom: 3px solid #8e2c17; border-radius: 11px;
+  text-shadow: 0 1px 1px rgba(120,30,14,.5);
+}
+.update-btn:active { transform: translateY(2px); border-bottom-width: 1px; }
+.update-btn:disabled { opacity: .6; }
+
 /* en pantallas angostas el rótulo del modo sobra: el puntito ya lo dice,
    y así el HUD entero cabe sin comerse su propio margen */
 @media (max-width: 380px) {
